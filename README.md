@@ -49,12 +49,12 @@ Notes
 
 - The cluster uses only one processor core, so you should run as many instances per box as there are cores to ensure maximum efficency.
 
-- The C++ compiler requires C++11 compatiblity. GCC is fine.
+- The C++ compiler requires C++11 compatiblity. GCC is fine if you pass `-std=c++11` flag to it. We recommend compiling with the `-O3` flag for performance. `-funroll-loops -march=native` only for the crazy ones.
 
 To-Do
 ---
 
-Currently, only filtration (`WHERE`) is implemented. Aggregation & Grouping is still to be done.
+Currently, only filtration (`WHERE`) is implemented. Aggregation & Grouping is still to be done, but's not hard to do.
 
 Client
 ===
