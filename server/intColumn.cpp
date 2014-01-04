@@ -136,16 +136,21 @@ struct BaseIntVector {
 		return at(pos);
 	}
 
-	void expand(int n) {
-		switch(current()) {
-			       case 0:
-				n8.resize(n);
-			break; case 1:
-				n16.resize(n - n8.size());
-			break; case 2:
-				n24.resize(n - n8.size() - n16.size());
-			break; case 3:
-				n32.resize(n - n8.size() - n16.size() - n24.size());
+	void expand(u32 n) {
+		u32 siz = size();
+		if (n < siz) {
+			cerr << "ERROR: Column can only be expanded." << endl;
+		} else if (n != siz) {
+			switch(current()) {
+					   case 0:
+					n8.resize(n);
+				break; case 1:
+					n16.resize(n - n8.size());
+				break; case 2:
+					n24.resize(n - n8.size() - n16.size());
+				break; case 3:
+					n32.resize(n - n8.size() - n16.size() - n24.size());
+			}
 		}
 	}
 

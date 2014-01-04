@@ -47,8 +47,4 @@ private
 			throw "Unknown subexpression: #{expr.first}"
 		end
 	end
-
 end
-
-e = Expression.new 'null'
-p e.to_a
