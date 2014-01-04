@@ -1,9 +1,14 @@
 MemoryBeast
 ===========
 
-Amazingly fast in-memory distributed SQL-like data storage. It consists of multiple cluster instances, written in C++ for speed and memory efficency and one Ruby instance connecting them all together, distributing tasks.
+Amazingly fast in-memory distributed (map-reduce) SQL-like data storage. It consists of multiple cluster instances, written in C++ for speed and memory efficency and one Ruby instance connecting them all together, distributing tasks.
 
 In terms of classic map-reduce paradigm, you could say the clusters are map and ruby frontend is the reduce. The ruby frontend is also in charge of dispatching the data to all the clusters.
+
+Limitations
+---
+
+The only permamanent limitation of this engine is inability to join multiple JSON files together. You can have multiple tables, but you can only select from one at the time.
 
 Server
 ===
@@ -24,7 +29,7 @@ If you want to preload the cluster with the data (to avoid network traffic), you
 The program then responds:
 
 ```
-Preloading file sample.json...
+Preloading file initial.json...
 Done. Loaded 276328 rows.
 
 Socket created
@@ -42,19 +47,20 @@ This storage engine is very memory efficient, using only about 10% memory compar
 - Dynamic integers: The engine dynamically determines the size of the integer column (1, 2, 3, 4, 8 byte) and then seamlessly switches to the bigger one, if needed.
 - Range-based integer values: In case of timestamps, they are usually big numbers, but their range is small, it usually spans just a few days or maybe months. This allows us to save the base and report the number relative to it, using smaller integer to save it.
 - Three-byte integers: The engine supports three byte integers, saving one byte per record in columns that range in value form 2¹⁶ to the 2²⁴.
-- Packing boolean values: `True` and `False` only consume one bit as we pack eight of these into one byte.
+- Packing boolean values: `True` and `False` only consume one bit as we pack eight of these into one byte. This is actually the default behaviour of the C++ `vector<bool>` data structure.
 
 Notes
 ---
 
 - The cluster uses only one processor core, so you should run as many instances per box as there are cores to ensure maximum efficency.
 
-- The C++ compiler requires C++11 compatiblity. GCC is fine.
+- The C++ compiler requires C++11 compatiblity. GCC is fine if you pass `-std=c++11` flag to it. We recommend compiling with the `-O3` flag for performance. `-funroll-loops -march=native` only for the crazy ones.
 
 To-Do
 ---
 
-Currently, only filtration (`WHERE`) is implemented. Aggregation & Grouping is still to be done.
+- [ ] Currently, only filtration (`WHERE`) is implemented. Aggregation & Grouping is still to be done, but's not hard to do.
+- [ ] `Val struct` leaks memory.
 
 Client
 ===
@@ -71,9 +77,11 @@ comp = MemoryBeast.new({
 })
 ```
 
-Then you are free to load the data (if you didn't do that before). Specify the file and table name:
+The second number beside the IP designates how should the client divide the future data amongst the clusters. Cluster with two times higher number should have twice as much RAM & CPU power.
 
-```
+Then you are free to load the data (if you didn't do that on server initialization). Specify the file and table name:
+
+```ruby
 comp.load '../../sets/tiny.json', 'data'
 ```
 
@@ -87,9 +95,9 @@ result = comp.select(
 )
 ```
 
-The second number designates how should the client divide the future data amongst the clusters. Cluster with two times higher number should have twice as much RAM & CPU power.
 
-The communication between the client and servers
+
+The JSON communication protocol
 ---
 
 During the execution of the query, the communication to clusters and back is clearly visible. For the above query, the client first sends it in an appropriate form to all the clusters.
@@ -109,4 +117,15 @@ It then gets the response and assembles (reduces) it into the final result:
 To-Do
 ---
 
-Write it in the form of Ruby gem.
+- [ ] Add support for classical (complex) SQL statements like:
+
+```SQL
+SELECT 2+MAX(a*b) AS max, COUNT() AS count, c
+FROM data
+WHERE 2*d = e AND ISNULL(f)
+GROUP BY c, 10*b
+```
+
+This is easy to do as the expressions parsers are already made.
+
+- [ ] Write it in the form of Ruby gem.
