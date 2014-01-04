@@ -29,7 +29,7 @@ If you want to preload the cluster with the data (to avoid network traffic), you
 The program then responds:
 
 ```
-Preloading file sample.json...
+Preloading file initial.json...
 Done. Loaded 276328 rows.
 
 Socket created
@@ -59,7 +59,8 @@ Notes
 To-Do
 ---
 
-Currently, only filtration (`WHERE`) is implemented. Aggregation & Grouping is still to be done, but's not hard to do.
+- [ ] Currently, only filtration (`WHERE`) is implemented. Aggregation & Grouping is still to be done, but's not hard to do.
+- [ ] `Val struct` leaks memory.
 
 Client
 ===
@@ -76,7 +77,9 @@ comp = MemoryBeast.new({
 })
 ```
 
-Then you are free to load the data (if you didn't do that before). Specify the file and table name:
+The second number beside the IP designates how should the client divide the future data amongst the clusters. Cluster with two times higher number should have twice as much RAM & CPU power.
+
+Then you are free to load the data (if you didn't do that on server initialization). Specify the file and table name:
 
 ```ruby
 comp.load '../../sets/tiny.json', 'data'
@@ -92,9 +95,9 @@ result = comp.select(
 )
 ```
 
-The second number designates how should the client divide the future data amongst the clusters. Cluster with two times higher number should have twice as much RAM & CPU power.
 
-The communication between the client and servers
+
+The JSON communication protocol
 ---
 
 During the execution of the query, the communication to clusters and back is clearly visible. For the above query, the client first sends it in an appropriate form to all the clusters.
@@ -114,9 +117,9 @@ It then gets the response and assembles (reduces) it into the final result:
 To-Do
 ---
 
-- Add support for classical (complex) SQL statements like:
+- [ ] Add support for classical (complex) SQL statements like:
 
-```sql
+```SQL
 SELECT 2+MAX(a*b) AS max, COUNT() AS count, c
 FROM data
 WHERE 2*d = e AND ISNULL(f)
@@ -125,4 +128,4 @@ GROUP BY c, 10*b
 
 This is easy to do as the expressions parsers are already made.
 
-- Write it in the form of Ruby gem.
+- [ ] Write it in the form of Ruby gem.
