@@ -5,6 +5,11 @@ Amazingly fast in-memory distributed SQL-like data storage. It consists of multi
 
 In terms of classic map-reduce paradigm, you could say the clusters are map and ruby frontend is the reduce. The ruby frontend is also in charge of dispatching the data to all the clusters.
 
+Limitations
+---
+
+The only permamanent limitation of this engine is inability to join multiple JSON files together. You can have multiple tables, but you can only select from one at the time.
+
 Server
 ===
 
@@ -73,7 +78,7 @@ comp = MemoryBeast.new({
 
 Then you are free to load the data (if you didn't do that before). Specify the file and table name:
 
-```
+```ruby
 comp.load '../../sets/tiny.json', 'data'
 ```
 
@@ -109,4 +114,15 @@ It then gets the response and assembles (reduces) it into the final result:
 To-Do
 ---
 
-Write it in the form of Ruby gem.
+- Add support for classical (complex) SQL statements like:
+
+```sql
+SELECT 2+MAX(a*b) AS max, COUNT() AS count, c
+FROM data
+WHERE 2*d = e AND ISNULL(f)
+GROUP BY c, 10*b
+```
+
+This is easy to do as the expressions parsers are already made.
+
+- Write it in the form of Ruby gem.
