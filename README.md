@@ -1,7 +1,7 @@
 MemoryBeast
 ===========
 
-Amazingly fast in-memory distributed SQL-like data storage. It consists of multiple cluster instances, written in C++ for speed and memory efficency and one Ruby instance connecting them all together, distributing tasks.
+Amazingly fast in-memory distributed (map-reduce) SQL-like data storage. It consists of multiple cluster instances, written in C++ for speed and memory efficency and one Ruby instance connecting them all together, distributing tasks.
 
 In terms of classic map-reduce paradigm, you could say the clusters are map and ruby frontend is the reduce. The ruby frontend is also in charge of dispatching the data to all the clusters.
 
@@ -47,7 +47,7 @@ This storage engine is very memory efficient, using only about 10% memory compar
 - Dynamic integers: The engine dynamically determines the size of the integer column (1, 2, 3, 4, 8 byte) and then seamlessly switches to the bigger one, if needed.
 - Range-based integer values: In case of timestamps, they are usually big numbers, but their range is small, it usually spans just a few days or maybe months. This allows us to save the base and report the number relative to it, using smaller integer to save it.
 - Three-byte integers: The engine supports three byte integers, saving one byte per record in columns that range in value form 2¹⁶ to the 2²⁴.
-- Packing boolean values: `True` and `False` only consume one bit as we pack eight of these into one byte.
+- Packing boolean values: `True` and `False` only consume one bit as we pack eight of these into one byte. This is actually the default behaviour of the C++ `vector<bool>` data structure.
 
 Notes
 ---
