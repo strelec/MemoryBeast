@@ -42,12 +42,12 @@ What do we do to save the memory
 
 This storage engine is very memory efficient, using only about 10% memory compared to the size of the `.json` file. This means you could store 40GB file to a laptop with 4GB of ram.
 
-- Column-based data storage: Data is stored in column based fashion - this way we only save the schema once, not once for every record.
-- String lookup tables: For each column, we allocate one string lookup table. This is great for columns that have sparse set of possible values, like `male` and `female` and many others. This feature is dynamic; during the insertion, if the engine determines uniqueness of more than 30%, this lookup table self-destructs reducing its overhead to zero.
-- Dynamic integers: The engine dynamically determines the size of the integer column (1, 2, 3, 4, 8 byte) and then seamlessly switches to the bigger one, if needed.
-- Range-based integer values: In case of timestamps, they are usually big numbers, but their range is small, it usually spans just a few days or maybe months. This allows us to save the base and report the number relative to it, using smaller integer to save it.
-- Three-byte integers: The engine supports three byte integers, saving one byte per record in columns that range in value form 2¹⁶ to the 2²⁴.
-- Packing boolean values: `True` and `False` only consume one bit as we pack eight of these into one byte. This is actually the default behaviour of the C++ `vector<bool>` data structure.
+- **Column-based data storage:** Data is stored in column based fashion - this way we only save the schema once, not once for every record.
+- **String lookup tables:** For each column, we allocate one string lookup table. This is great for columns that have sparse set of possible values, like `male` and `female` and many others. This feature is dynamic; during the insertion, if the engine determines uniqueness of more than 30%, this lookup table self-destructs reducing its overhead to zero.
+- **Dynamic integers:** The engine dynamically determines the size of the integer column (1, 2, 3, 4, 8 byte) and then seamlessly switches to the bigger one, if needed.
+- **Range-based integer values:** In case of timestamps, they are usually big numbers, but their range is small, it usually spans just a few days or maybe months. This allows us to save the base and report the number relative to it, using smaller integer to save it.
+- **Three-byte integers:** The engine supports three byte integers, saving one byte per record in columns that range in value form 2¹⁶ to the 2²⁴.
+- **Packing boolean values:** `True` and `False` only consume one bit as we pack eight of these into one byte. This is actually the default behaviour of the C++ `vector<bool>` data structure.
 
 Notes
 ---
