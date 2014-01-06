@@ -143,13 +143,13 @@ struct BaseIntVector {
 		} else if (n != siz) {
 			switch(current()) {
 					   case 0:
-					n8.resize(n);
+					n8.resize(n /* - siz + n8.size() */);
 				break; case 1:
-					n16.resize(n - n8.size());
+					n16.resize(n - siz + n16.size());
 				break; case 2:
-					n24.resize(n - n8.size() - n16.size());
+					n24.resize(n - siz + n24.size());
 				break; case 3:
-					n32.resize(n - n8.size() - n16.size() - n24.size());
+					n32.resize(n - siz + n32.size());
 			}
 		}
 	}
