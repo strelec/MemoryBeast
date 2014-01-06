@@ -58,12 +58,8 @@ struct Table {
 				} else {
 					switch(call[0]) {
 						case '=':
-							if (call == "==") {
-								Val v;
-								v.type = BOOL;
-								v.vBool = eval(expr[1]) == eval(expr[2]);
-								return v;
-							}
+							if (call == "=")
+								return toVal( eval(expr[1]) == eval(expr[2]) );
 						break; case '+':
 							if (expr.size() >= 3)
 								return plus(eval(expr[1]), eval(expr[2]));
@@ -75,26 +71,14 @@ struct Table {
 							if (expr.size() >= 2)
 								return minus(eval(expr[1]));
 						break; case 'o':
-							if (call == "or") {
-								Val v;
-								v.type = BOOL;
-								v.vBool = dbg(eval(expr[1]).truey()) || dbg(eval(expr[2]).truey());
-								return v;
-							}
+							if (call == "or")
+								return toVal( eval(expr[1]).truey() || eval(expr[2]).truey() );
 						break; case 'a':
-							if (call == "and") {
-								Val v;
-								v.type = BOOL;
-								v.vBool = eval(expr[1]).truey() && eval(expr[2]).truey();
-								return v;
-							}
+							if (call == "and")
+								return toVal( eval(expr[1]).truey() && eval(expr[2]).truey() );
 						break; case 'n':
-							if (call == "not") {
-								Val v;
-								v.type = BOOL;
-								v.vBool = !eval(expr[1]).truey();
-								return v;
-							}
+							if (call == "not")
+								return toVal( !eval(expr[1]).truey() );
 					}
 				}
 			} break;
@@ -169,6 +153,13 @@ private:
 	}
 
 private:
+
+	Val toVal(bool b) {
+		Val v;
+		v.type = BOOL;
+		v.vBool = b;
+		return v;		
+	}
 
 	Val plus(Val a, Val b) {
 		Val v;
