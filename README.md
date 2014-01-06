@@ -33,7 +33,7 @@ Preloading file initial.json...
 Done. Loaded 276328 rows.
 
 Socket created
-Running server at port 5011.
+Running server at port 5001.
 Waiting for incoming connections...
 ```
 
@@ -60,7 +60,7 @@ To-Do
 ---
 
 - [ ] Currently, only filtration (`WHERE`) is implemented. Aggregation & Grouping is still to be done, but's not hard to do.
-- [ ] `Val struct` leaks memory.
+- [ ] `Val struct` leaks memory. Not critical, but needs fixing.
 
 Client
 ===
@@ -107,11 +107,18 @@ During the execution of the query, the communication to clusters and back is cle
 127.0.0.1:5011 << {"act":"select","table":"data","what":{"id":["get","id"],"creative.id":["get","creative","id"]},"where":["==",["get","adServerLoadAvg"],0.0]}
 ```
 
-It then gets the response and assembles (reduces) it into the final result:
+It then waits for the response from all the clusters:
 
 ```json
-127.0.0.1:5012 0.0007s >> {"result":[]}
-127.0.0.1:5011 0.0404s >> {"result":[{"creative.id":"5f34dfaf","id":"s1377995572x52228b3438a667x73933957"},{"creative.id":"28c05792","id":"s1378068738x5223a90253b100x73986990"},{"creative.id":"dbae1ef6","id":"s1378093114x5224083a3d77b0x52199543"}]}
+127.0.0.1:5012 0.0007s >> {"result":[{"creative.id":"5f34dfaf","id":"s1377995572x52228b3438a667x73933957"}]}
+127.0.0.1:5011 0.0404s >> {"result":[{"creative.id":"28c05792","id":"s1378068738x5223a90253b100x73986990"},{"creative.id":"dbae1ef6","id":"s1378093114x5224083a3d77b0x52199543"}]}
+```
+
+... and assembles (reduces) it into the final result:
+```json
+{"creative.id":"5f34dfaf","id":"s1377995572x52228b3438a667x73933957"}
+{"creative.id":"28c05792","id":"s1378068738x5223a90253b100x73986990"}
+{"creative.id":"dbae1ef6","id":"s1378093114x5224083a3d77b0x52199543"}
 ```
 
 To-Do
@@ -120,7 +127,7 @@ To-Do
 - [ ] Add support for classical (complex) SQL statements like:
 
 ```SQL
-SELECT 2+MAX(a*b) AS max, COUNT() AS count, c
+SELECT 2+MAX(a*b) AS max, COUNT(id) AS count, c
 FROM data
 WHERE 2*d = e AND ISNULL(f)
 GROUP BY c, 10*b
