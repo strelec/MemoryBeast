@@ -72,6 +72,13 @@ struct Val {
 			default:    return true;
 		}
 	}
+	real realize() {
+		if (type == REAL)
+			return vReal;
+		if (type == INT)
+			return vInt;
+		return 0;
+	}
 
 	bool operator<(const Val& b) const {
 		assert(type == b.type);

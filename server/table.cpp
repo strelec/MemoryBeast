@@ -158,21 +158,36 @@ private:
 		Val v;
 		v.type = BOOL;
 		v.vBool = b;
-		return v;		
+		return v;
+	}
+
+	Val coerc(Val a, Val b,
+	function<i64(i64 a, i64 b)> i, function<real(real a, real b)> r) {
+		Val out;
+		if (a.type == INT && b.type == INT) {
+			out.type = INT;
+			out.vInt = i(a.vInt, b.vInt);
+		} else if (a.type == REAL || b.type == REAL) {
+			out.type = REAL;
+			out.vReal = r(a.realize(), b.realize());
+		}
+		return out;
 	}
 
 	Val plus(Val a, Val b) {
-		Val v;
-		v.type = INT;
-		v.vInt = a.vInt + b.vInt;
-		return v;
+		return coerc(a, b, [](i64 a, i64 b) {
+			return a + b;
+		}, [](real a, real b) {
+			return a + b;
+		});
 	}
 
 	Val minus(Val a, Val b) {
-		Val v;
-		v.type = INT;
-		v.vInt = a.vInt - b.vInt;
-		return v;
+		return coerc(a, b, [](i64 a, i64 b) {
+			return a - b;
+		}, [](real a, real b) {
+			return a - b;
+		});
 	}
 
 	Val minus(Val a) {
