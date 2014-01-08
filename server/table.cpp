@@ -70,6 +70,27 @@ struct Table {
 								return minus(eval(expr[1]), eval(expr[2]));
 							if (expr.size() >= 2)
 								return minus(eval(expr[1]));
+						break; case '*':
+							if (expr.size() >= 3)
+								return coerc(eval(expr[1]), eval(expr[2]), [](i64 a, i64 b) {
+									return a * b;
+								}, [](real a, real b) {
+									return a * b;
+								});
+						break; case '/':
+							if (expr.size() >= 3)
+								return coerc(eval(expr[1]), eval(expr[2]), [](i64 a, i64 b) {
+									return a / b;
+								}, [](real a, real b) {
+									return a / b;
+								});
+						break; case '^':
+							if (expr.size() >= 3)
+								return coerc(eval(expr[1]), eval(expr[2]), [](i64 a, i64 b) {
+									return pow(a, b);
+								}, [](real a, real b) {
+									return pow(a, b);
+								});
 						break; case 'o':
 							if (call == "or")
 								return toVal( eval(expr[1]).truey() || eval(expr[2]).truey() );
