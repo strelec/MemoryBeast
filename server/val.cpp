@@ -27,10 +27,12 @@ struct Val {
 	}
 	/*Val(const Val &b) {
 		type = b.type;
+		vReal = b.vReal; // HACK!
+
 		if (type == STR) {
-			vStr = new string(*b.vStr);
+			vStr = new string(*vStr);
 		} else if (type == MFORN) {
-			vTbl = new vector<u32>(*b.vTbl);
+			vTbl = new vector<u32>(*vTbl);
 		}
 	}*/
 	Val(u32 val) {
@@ -63,6 +65,12 @@ struct Val {
 		}
 	}
 
+	/*Val& operator=(Val b) {
+		swap(type, b.type);
+		swap(vReal, b.vReal);
+		return *this;
+	}*/
+
 	bool truey() {
 		switch(type) {
 			case NIL:   return false;
@@ -72,7 +80,7 @@ struct Val {
 			default:    return true;
 		}
 	}
-	real realize() {
+	real realize() const {
 		if (type == REAL)
 			return vReal;
 		if (type == INT)
@@ -80,7 +88,7 @@ struct Val {
 		return 0;
 	}
 
-	bool operator<(const Val& b) const {
+	bool operator<(const Val b) const {
 		assert(type == b.type);
 		assert(type != MFORN);
 
@@ -98,7 +106,7 @@ struct Val {
 		}
 	}
 
-	bool operator==(const Val& b) const {
+	bool operator==(const Val b) const {
 		assert(type != MFORN);
 
 		if (type != b.type)
@@ -112,6 +120,93 @@ struct Val {
 			case STR:   return *vStr == *b.vStr;
 			case BOOL:  return vBool == b.vBool;
 			default:    return true;
+		}
+	}
+
+	void operator+=(const Val b) {
+		if (type == INT) {
+			if (b.type == INT) {
+				vInt += b.vInt;
+			} else {
+				type = REAL;
+				vReal = vInt + b.vReal;
+			}
+		} else if (type == REAL) {
+			vReal += b.realize();
+		} else {
+			type = NIL;
+		}
+	}
+
+	void operator-=(const Val b) {
+		if (type == INT) {
+			if (b.type == INT) {
+				vInt -= b.vInt;
+			} else {
+				type = REAL;
+				vReal = vInt - b.vReal;
+			}
+		} else if (type == REAL) {
+			vReal -= b.realize();
+		} else {
+			type = NIL;
+		}
+	}
+
+	void inv() {
+		if (type == INT) {
+			vInt *= -1;
+		} else if (type == REAL) {
+			vReal *= 1;
+		} else {
+			type = NIL;
+		}
+	}
+
+	void operator*=(const Val b) {
+		if (type == INT) {
+			if (b.type == INT) {
+				vInt *= b.vInt;
+			} else {
+				type = REAL;
+				vReal = vInt * b.vReal;
+			}
+		} else if (type == REAL) {
+			vReal *= b.realize();
+		} else {
+			type = NIL;
+		}
+	}
+
+	void operator/=(const Val b) {
+		if (b.realize() == 0) {
+			type = NIL;
+		} else if (type == INT) {
+			if (b.type == INT) {
+				vInt /= b.vInt;
+			} else {
+				type = REAL;
+				vReal = vInt / b.vReal;
+			}
+		} else if (type == REAL) {
+			vReal /= b.realize();
+		} else {
+			type = NIL;
+		}
+	}
+
+	void operator^=(const Val b) {
+		if (type == INT) {
+			if (b.type == INT) {
+				vInt = pow(vInt, b.vInt);
+			} else {
+				type = REAL;
+				vReal = pow(vInt, b.vReal);
+			}
+		} else if (type == REAL) {
+			vInt = pow(vReal, b.realize());
+		} else {
+			type = NIL;
 		}
 	}
 
@@ -139,7 +234,7 @@ struct Val {
 	}
 
 	void debug() {
-		cout << type << ": " << json().toStyledString();
+		cout << type << ": " << json();
 	}
 
 	~Val() {
@@ -149,5 +244,20 @@ struct Val {
 		} else if (type == MFORN) {
 			delete vTbl;
 		}
+	}
+
+private:
+
+	Val coerc(Val a, Val b,
+	function<i64(i64 a, i64 b)> i, function<real(real a, real b)> r) {
+		Val out;
+		if (a.type == INT && b.type == INT) {
+			out.type = INT;
+			out.vInt = i(a.vInt, b.vInt);
+		} else if (a.type == REAL || b.type == REAL) {
+			out.type = REAL;
+			out.vReal = r(a.realize(), b.realize());
+		}
+		return out;
 	}
 };
