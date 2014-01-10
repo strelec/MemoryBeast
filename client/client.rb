@@ -69,14 +69,17 @@ private
 	end
 
 	def select(params)
+		raise 'When selecting, you did not spefiy the table.' unless params.key? :table
+		raise 'You have to select something.' if !params.key?(:what) || params[:what].empty?
+
 		query = {
 			act: 'select',
 			table: params[:table],
-			what: params[:what].values.map { |el|
+			what: (params[:what]).values.map { |el|
 				Expression.new(el).to_a
 			},
 			where: Expression.new(params[:where]).to_a,
-			group: params[:group].map { |el|
+			group: (params[:group] || []).map { |el|
 				Expression.new(el).to_a
 			},
 		}

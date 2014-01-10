@@ -31,8 +31,9 @@ struct Table {
 		vector<Val> key;
 		vector<Val> vals;
 
+		bool noFilter = q["where"].type() == Json::nullValue;
 		for(current=0; current<size; ++current) {
-			if (eval(q["where"]).truey()) {
+			if (!noFilter && eval(q["where"]).truey()) {
 				key.clear();
 				for(auto it: q["group"]) {
 					key.push_back( eval(it) );

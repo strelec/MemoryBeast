@@ -3,6 +3,7 @@ require 'ripper'
 class Expression
 
 	def initialize(expr)
+		expr = '' unless String === expr
 		@tree = Ripper.sexp(expr).last.first
 	end
 
@@ -14,6 +15,8 @@ private
 
 	def get(expr)
 		case expr.first
+		when :void_stmt
+			nil
 		when :vcall
 			return nil if expr[1][1] == 'null'
 			[ 'get', expr[1][1] ]
