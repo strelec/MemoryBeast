@@ -27,7 +27,7 @@ struct Val {
 	}
 	Val(const Val &b) {
 		type = b.type;
-		vReal = b.vReal;
+		vStr = b.vStr; // copy whole union
 
 		if (type == STR) {
 			vStr = new string(*vStr);
@@ -70,7 +70,7 @@ struct Val {
 
 		type = b.type;
 		b.type = NIL;
-		vReal = b.vReal;
+		vStr = b.vStr; // copy whole union
 		return *this;
 	}
 
