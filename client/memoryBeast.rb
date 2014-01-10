@@ -21,17 +21,22 @@ class MemoryBeast
 		data = []
 		stage = 0
 
+		send = -> stage, data {
+			clients[stage].preserve = true
+			clients[stage].run :load, data, table
+		}
+
 		File.open(file, 'r') { |f|
 			f.each { |line|
 				data << line.chomp
 				if data.size >= clients[stage].capability
-					clients[stage].run :load, data, table
+					send[stage, data]
 					data = Array.new
 					stage = (stage + 1) % clients.size
 				end
 			}
 		}
-		clients[stage].run :load, data, table
+		send[stage, data]
 
 		clients.each { |c|
 			c.result

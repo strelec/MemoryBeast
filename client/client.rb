@@ -13,8 +13,8 @@ class Client
 		@thread = NilThread.new
 	end
 
-	attr_accessor :thread, :capability
-	attr_reader :host
+	attr_accessor :capability, :preserve
+	attr_reader :thread, :host
 
 	def result
 		thread.join
@@ -26,18 +26,20 @@ class Client
 		connect
 		@thread = Thread.new {
 			send name, *params
-			close
+			close unless @preserve
+			@preserve = false
 		}
 	end
 
 private
 
 	def connect
-		@sock = TCPSocket.new(*host)
+		@sock = TCPSocket.new(*host) unless @sock
 	end
 
 	def close
 		@sock.close
+		@sock = nil
 	end
 
 	def out(query)
