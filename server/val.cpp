@@ -25,16 +25,16 @@ struct Val {
 	Val() {
 		type = NIL;
 	}
-	/*Val(const Val &b) {
+	Val(const Val &b) {
 		type = b.type;
-		vReal = b.vReal; // HACK!
+		vReal = b.vReal;
 
 		if (type == STR) {
 			vStr = new string(*vStr);
 		} else if (type == MFORN) {
 			vTbl = new vector<u32>(*vTbl);
 		}
-	}*/
+	}
 	Val(u32 val) {
 		type = FORN;
 		vForn = val;
@@ -65,11 +65,14 @@ struct Val {
 		}
 	}
 
-	/*Val& operator=(Val b) {
-		swap(type, b.type);
-		swap(vReal, b.vReal);
+	Val& operator=(Val b) {
+		destroy();
+
+		type = b.type;
+		b.type = NIL;
+		vReal = b.vReal;
 		return *this;
-	}*/
+	}
 
 	bool truey() {
 		switch(type) {
@@ -121,6 +124,10 @@ struct Val {
 			case BOOL:  return vBool == b.vBool;
 			default:    return true;
 		}
+	}
+
+	bool operator>(const Val b) const {
+		return !(*this < b) && !(*this == b);
 	}
 
 	void operator+=(const Val b) {
@@ -210,6 +217,11 @@ struct Val {
 		}
 	}
 
+	void operator++() {
+		if (type == INT)
+			vInt++;
+	}
+
 	Json::Value json() {
 		Json::Value val;
 		switch(type) {
@@ -233,20 +245,19 @@ struct Val {
 		return val;
 	}
 
-	void debug() {
-		cout << type << ": " << json();
+	~Val() {
+		destroy();
 	}
 
-	~Val() {
-		return;
+private:
+
+	void destroy() {
 		if (type == STR) {
 			delete vStr;
 		} else if (type == MFORN) {
 			delete vTbl;
 		}
 	}
-
-private:
 
 	Val coerc(Val a, Val b,
 	function<i64(i64 a, i64 b)> i, function<real(real a, real b)> r) {
