@@ -19,28 +19,82 @@ struct Table {
 		index = nullptr;
 	}
 
-	bool dbg(bool a) {
-		cout << a << endl;
-		return a;
-	}
-
-	int current = 0;
-	int simple = true;
+	u32 current = 0;
+	bool simple = true;
+	bool agg = false;
 
 	Json::Value select(Json::Value q) {
-		Json::Value ret = Json::arrayValue;
+		simple = true;
+		agg = false;
 
-		for(u32 i=0; i<size; ++i) {
-			current = i;
+		map<vector<Val>, vector<vector<Val>>> res;
+		vector<Val> key;
+		vector<Val> vals;
+
+		for(current=0; current<size; ++current) {
 			if (eval(q["where"]).truey()) {
-				Json::Value o = Json::objectValue;
-				for(auto it = q["what"].begin(); it != q["what"].end(); ++it) {
-					o[ it.key().asString() ] = eval(*it).json();
+				key.clear();
+				for(auto it: q["group"]) {
+					key.push_back( eval(it) );
 				}
-				ret.append(o);
+
+				if (!agg || res[key].empty()) {
+
+					vals.clear();
+					for(auto it: q["what"]) {
+						vals.push_back( eval(it) );
+					}
+					res[key].push_back(vals);
+
+				} else { // correct previous row to aggregate
+					vector<Val> &prev = res[key].back();
+
+					int i = 0;
+					for(auto it: q["what"]) {
+						if (it.type() == Json::arrayValue) {
+							string call = it[0u].asString();
+							switch(call[0]) {
+								case 'm':
+									if (call == "max") {
+										Val first = eval(it[1]);
+										if (prev[i] < first)
+											prev[i] = first;
+									}
+									if (call == "min") {
+										Val first = eval(it[1]);
+										if (prev[i] > first)
+											prev[i] = first;
+									}
+								break; case 's':
+									if (call == "sum") {
+										prev[i] += eval(it[1]);
+									}
+								break; case 'c':
+									if (call == "count") {
+										if (eval(it[1]).type != NIL)
+											++prev[i];
+									}
+							}
+						}
+						i++;
+					}
+				}
 			}
 		}
 
+		// output json fron data structure
+		Json::Value ret = Json::arrayValue;
+		for(auto &it: res) {
+			Json::Value tbl = Json::arrayValue;
+			for(auto &vl: it.second)
+				tbl.append(convert(vl));
+
+			Json::Value group = Json::arrayValue;
+			group.append(convert(it.first));
+			group.append(tbl);
+
+			ret.append(group);
+		}
 		return ret;
 	}
 
@@ -56,41 +110,30 @@ struct Table {
 						p.push_back( expr[i].asString() );
 					return Val(columns[p][current]);
 				} else {
+					Val first = eval(expr[1]);
 					switch(call[0]) {
 						case '=':
-							if (call == "=")
+							if (call == "=" || call == "==")
 								return toVal( eval(expr[1]) == eval(expr[2]) );
+
 						break; case '+':
 							if (expr.size() >= 3)
-								return plus(eval(expr[1]), eval(expr[2]));
-							if (expr.size() >= 2)
-								return eval(expr[1]);
+								first += eval(expr[2]);
 						break; case '-':
 							if (expr.size() >= 3)
-								return minus(eval(expr[1]), eval(expr[2]));
+								first += eval(expr[2]);
 							if (expr.size() >= 2)
-								return minus(eval(expr[1]));
+								first.inv();
 						break; case '*':
 							if (expr.size() >= 3)
-								return coerc(eval(expr[1]), eval(expr[2]), [](i64 a, i64 b) {
-									return a * b;
-								}, [](real a, real b) {
-									return a * b;
-								});
+								first *= eval(expr[2]);
 						break; case '/':
 							if (expr.size() >= 3)
-								return coerc(eval(expr[1]), eval(expr[2]), [](i64 a, i64 b) {
-									return a / b;
-								}, [](real a, real b) {
-									return a / b;
-								});
+								first /= eval(expr[2]);
 						break; case '^':
 							if (expr.size() >= 3)
-								return coerc(eval(expr[1]), eval(expr[2]), [](i64 a, i64 b) {
-									return pow(a, b);
-								}, [](real a, real b) {
-									return pow(a, b);
-								});
+								first ^= eval(expr[2]);
+
 						break; case 'o':
 							if (call == "or")
 								return toVal( eval(expr[1]).truey() || eval(expr[2]).truey() );
@@ -100,7 +143,27 @@ struct Table {
 						break; case 'n':
 							if (call == "not")
 								return toVal( !eval(expr[1]).truey() );
+
+						break; case 'm':
+							if (call == "max" || call == "min") {
+								agg = true;
+								return first;
+							}
+						break; case 's':
+							if (call == "sum") {
+								agg = true;
+								return first;
+							}
+						break; case 'c':
+							if (call == "count") {
+								agg = true;
+								Val r;
+								r.type = INT;
+								r.vInt = (first.type == NIL) ? 0 : 1;
+								return r;
+							}
 					}
+					return first;
 				}
 			} break;
 			case Json::objectValue:
@@ -173,8 +236,6 @@ private:
 		return id;
 	}
 
-private:
-
 	Val toVal(bool b) {
 		Val v;
 		v.type = BOOL;
@@ -182,39 +243,10 @@ private:
 		return v;
 	}
 
-	Val coerc(Val a, Val b,
-	function<i64(i64 a, i64 b)> i, function<real(real a, real b)> r) {
-		Val out;
-		if (a.type == INT && b.type == INT) {
-			out.type = INT;
-			out.vInt = i(a.vInt, b.vInt);
-		} else if (a.type == REAL || b.type == REAL) {
-			out.type = REAL;
-			out.vReal = r(a.realize(), b.realize());
-		}
-		return out;
-	}
-
-	Val plus(Val a, Val b) {
-		return coerc(a, b, [](i64 a, i64 b) {
-			return a + b;
-		}, [](real a, real b) {
-			return a + b;
-		});
-	}
-
-	Val minus(Val a, Val b) {
-		return coerc(a, b, [](i64 a, i64 b) {
-			return a - b;
-		}, [](real a, real b) {
-			return a - b;
-		});
-	}
-
-	Val minus(Val a) {
-		Val v;
-		v.type = INT;
-		v.vInt = -a.vInt;
+	Json::Value convert(vector<Val> vec) {
+		Json::Value v = Json::arrayValue;
+		for(auto &el: vec)
+			v.append( el.json() );
 		return v;
 	}
 };

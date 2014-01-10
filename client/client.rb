@@ -69,10 +69,13 @@ private
 		query = {
 			act: 'select',
 			table: params[:table],
-			what: Hash[ params[:what].map { |el|
-				[ el, Expression.new(el).to_a ]
-			} ],
-			where: Expression.new(params[:where]).to_a
+			what: params[:what].values.map { |el|
+				Expression.new(el).to_a
+			},
+			where: Expression.new(params[:where]).to_a,
+			group: params[:group].map { |el|
+				Expression.new(el).to_a
+			},
 		}
 		out query.to_json
 		recv

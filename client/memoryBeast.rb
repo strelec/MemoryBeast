@@ -49,9 +49,12 @@ class MemoryBeast
 			c.run :select, params
 		}
 
-		table = []
+		table = {}
 		clients.each { |c|
-			table += c.result['result']
+			results = Hash[ c.result['result'] ]
+			table.merge!(results) { |k, a, b|
+				a+b
+			}
 		}
 		table
 	end
