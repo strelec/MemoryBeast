@@ -51,7 +51,7 @@ private
 		@result = JSON::parse message
 
 		elapsed = Time.now - @start
-		debug "#{host * ':'} #{elapsed.round 4}s >> #{message}"
+		debug "#{host * ':'} #{elapsed.round 2}s >> #{message}"
 	end
 
 	def load(data, table)
@@ -69,13 +69,13 @@ private
 	end
 
 	def select(params)
-		raise 'When selecting, you did not spefiy the table.' unless params.key? :table
-		raise 'You have to select something.' if !params.key?(:what) || params[:what].empty?
+		raise 'You have to specify the table when selecting.' unless params.key? :table
+		raise 'You have to select at least one column.' if !params.key?(:what) || params[:what].empty?
 
 		query = {
 			act: 'select',
 			table: params[:table],
-			what: (params[:what]).values.map { |el|
+			what: params[:what].values.map { |el|
 				Expression.new(el).to_a
 			},
 			where: Expression.new(params[:where]).to_a,
