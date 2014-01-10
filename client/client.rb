@@ -9,15 +9,12 @@ end
 class Client
 
 	def initialize(host='127.0.0.1', port=5000)
-		@host = host
-		@port = port
-
-		@sock = TCPSocket.new host, port
+		@host = [host, port]
 		@thread = NilThread.new
 	end
 
 	attr_accessor :thread, :capability
-	attr_reader :host, :port
+	attr_reader :host
 
 	def result
 		thread.join
@@ -26,19 +23,25 @@ class Client
 
 	def run(name, *params)
 		result
+		connect
 		@thread = Thread.new {
 			send name, *params
+			close
 		}
+	end
+
+private
+
+	def connect
+		@sock = TCPSocket.new(*host)
 	end
 
 	def close
 		@sock.close
 	end
 
-private
-
 	def out(query)
-		debug "#{host}:#{port} << #{query}"
+		debug "#{host * ':'} << #{query}"
 		@start = Time.now
 		@sock.puts query
 	end
@@ -48,7 +51,7 @@ private
 		@result = JSON::parse message
 
 		elapsed = Time.now - @start
-		debug "#{host}:#{port} #{elapsed.round 4}s >> #{message}"
+		debug "#{host * ':'} #{elapsed.round 4}s >> #{message}"
 	end
 
 	def load(data, table)
