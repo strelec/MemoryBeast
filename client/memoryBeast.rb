@@ -50,6 +50,47 @@ class MemoryBeast
 	end
 
 	def select(params)
+		raise 'You have to specify the table when selecting.' unless params.key? :table
+		raise 'You have to select at least one column.' if !params.key?(:what) || params[:what].empty?
+
+		group = (params[:group] || []).map { |el|
+			Expression.new(el).to_a
+		}
+		what = []
+
+		find = -> ex {
+			pos = group.index ex
+			if pos
+				[:g, pos]
+			else
+				pos = what.index ex
+				if pos
+					[:w, pos]
+				else
+					what << ex
+					[:w, what.size-1]
+				end
+			end
+		}
+
+		result = {}
+		params[:what].each { |k, v|
+			ex = Expression.new(v).to_a
+
+			result[k] = if Array === ex && ex[0] == 'avg'
+				[ :a, find[['sum', ex.last]], find[['count', ex.last]] ]
+			else
+				find[ex]
+			end
+		}
+
+		params = {
+			table: params[:table],
+			what: what,
+			where: Expression.new(params[:where]).to_a,
+			group: group
+		}
+
 		clients.each { |c|
 			c.run :select, params
 		}
@@ -61,7 +102,23 @@ class MemoryBeast
 				a+b
 			}
 		}
-		table
+
+		Hash[ table.map { |key, rows|
+			[ key, subtable(key, rows, result) ]
+		} ]
+	end
+
+	def subtable(key, rows, result)
+		rows.map { |row|
+			Hash[ result.map { |kr, vr|
+				[ kr, case vr.first
+				when :g
+					key[vr.last]
+				when :w
+					row[vr.last]
+				end ]
+			} ]
+		}
 	end
 
 	def cleanup(table='data')

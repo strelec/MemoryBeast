@@ -23,7 +23,7 @@ private
 		when :call
 			[ 'get', get(expr[1]).drop(1), expr[3][1] ].flatten
 		when :command
-			[ expr[1][1] ] + expr[2][1].map { |e|
+			[ expr[1][1].downcase ] + expr[2][1].map { |e|
 				get e
 			}
 		when :method_add_arg

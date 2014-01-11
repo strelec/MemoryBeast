@@ -43,6 +43,7 @@ private
 	end
 
 	def out(query)
+		query = query.to_json
 		debug "#{host * ':'} << #{query}"
 		@start = Time.now
 		@sock.puts query
@@ -71,21 +72,10 @@ private
 	end
 
 	def select(params)
-		raise 'You have to specify the table when selecting.' unless params.key? :table
-		raise 'You have to select at least one column.' if !params.key?(:what) || params[:what].empty?
-
 		query = {
 			act: 'select',
-			table: params[:table],
-			what: params[:what].values.map { |el|
-				Expression.new(el).to_a
-			},
-			where: Expression.new(params[:where]).to_a,
-			group: (params[:group] || []).map { |el|
-				Expression.new(el).to_a
-			},
-		}
-		out query.to_json
+		}.merge params
+		out query
 		recv
 	end
 
@@ -95,19 +85,19 @@ private
 			act: 'eval',
 			expr: e.to_a
 		}
-		out query.to_json
+		out query
 		recv
 	end
 
 	def cleanup(table)
 		query = {act: 'cleanup', table: table}
-		out query.to_json
+		out query
 		recv
 	end
 
 	def tables
 		query = {act: 'tables'}
-		out query.to_json
+		out query
 		recv
 	end
 
