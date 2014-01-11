@@ -56,12 +56,6 @@ Notes
 
 - The C++ compiler requires C++11 compatiblity. GCC is fine if you pass `-std=c++11` flag to it. We recommend compiling with the `-O3` flag for performance. `-funroll-loops -march=native` only for the crazy ones.
 
-To-Do
----
-
-- [ ] Currently, only filtration (`WHERE`) is implemented. Aggregation & Grouping is still to be done, but's not hard to do.
-- [ ] `Val struct` leaks memory. Not critical, but needs fixing.
-
 Client
 ===
 
@@ -90,12 +84,11 @@ Then just make queries:
 ```ruby
 result = comp.select(
 	table: 'data',
-	what: ['id', 'creative.id'],
-	where: 'adServerLoadAvg == 0.0'
+	what: {average: 'avg(adServerLoadAvg)', max: "max(adServerLoadAvg)"},
+	where: 'adServerLoadAvg != 0.0',
+	group: ['sdk', 'creativeVersion']
 )
 ```
-
-
 
 The JSON communication protocol
 ---
@@ -103,8 +96,8 @@ The JSON communication protocol
 During the execution of the query, the communication to clusters and back is clearly visible. For the above query, the client first sends it in an appropriate form to all the clusters.
 
 ```json
-127.0.0.1:5012 << {"act":"select","table":"data","what":{"id":["get","id"],"creative.id":["get","creative","id"]},"where":["==",["get","adServerLoadAvg"],0.0]}
-127.0.0.1:5011 << {"act":"select","table":"data","what":{"id":["get","id"],"creative.id":["get","creative","id"]},"where":["==",["get","adServerLoadAvg"],0.0]}
+127.0.0.1:5001 << {"act":"select","table":"data","what":[["sum",["get","adServerLoadAvg"]],["count",["get","adServerLoadAvg"]],["max",["get","adServerLoadAvg"]]],"where":["!=",["get","adServerLoadAvg"],0.0],"group":[["get","sdk"],["get","creativeVersion"]]}
+127.0.0.1:5002 << {"act":"select","table":"data","what":[["sum",["get","adServerLoadAvg"]],["count",["get","adServerLoadAvg"]],["max",["get","adServerLoadAvg"]]],"where":["!=",["get","adServerLoadAvg"],0.0],"group":[["get","sdk"],["get","creativeVersion"]]}
 ```
 
 It then waits for the response from all the clusters:
@@ -124,15 +117,13 @@ It then waits for the response from all the clusters:
 To-Do
 ---
 
-- [ ] Add support for classical (complex) SQL statements like:
+- [ ] Add support to write SQL directly, such as:
 
 ```SQL
-SELECT 2+MAX(a*b) AS max, COUNT(id) AS count, c
+SELECT MAX(a*b) AS max, COUNT(id) AS count, c
 FROM data
 WHERE 2*d = e AND ISNULL(f)
 GROUP BY c, 10*b
 ```
 
 This is easy to do as the expressions parsers are already made.
-
-- [ ] Write it in the form of Ruby gem.
