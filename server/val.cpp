@@ -47,10 +47,10 @@ struct Val {
 		switch(val.type()) {
 			case Json::intValue:
 				type = INT;
-				vInt = val.asInt();
+				vInt = val.asLargestInt();
 			break; case Json::uintValue:
 				type = INT;
-				vInt = val.asUInt();
+				vInt = val.asLargestUInt();
 			break; case Json::realValue:
 				type = REAL;
 				vReal = val.asDouble();
@@ -124,6 +124,10 @@ struct Val {
 			case BOOL:  return vBool == b.vBool;
 			default:    return true;
 		}
+	}
+
+	bool operator!=(const Val b) const {
+		return !(*this == b);
 	}
 
 	bool operator>(const Val b) const {

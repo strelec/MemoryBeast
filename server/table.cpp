@@ -53,7 +53,7 @@ struct Table {
 					int i = 0;
 					for(auto it: q["what"]) {
 						if (it.type() == Json::arrayValue) {
-							string call = it[0u].asString();
+							string call = it[0].asString();
 							switch(call[0]) {
 								case 'm':
 									if (call == "max") {
@@ -102,7 +102,7 @@ struct Table {
 	Val eval(Json::Value expr) {
 		switch(expr.type()) {
 			case Json::arrayValue: {
-				string call = expr[0u].asString();
+				string call = expr[0].asString();
 				if (call == "get") {
 					simple = false;
 
@@ -116,6 +116,9 @@ struct Table {
 						case '=':
 							if (call == "=" || call == "==")
 								return toVal( eval(expr[1]) == eval(expr[2]) );
+						case '!':
+							if (call == "!=")
+								return toVal( eval(expr[1]) != eval(expr[2]) );
 
 						break; case '+':
 							if (expr.size() >= 3)
