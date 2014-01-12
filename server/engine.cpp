@@ -23,16 +23,6 @@ string dispPath(path p) {
 	return s;
 }
 
-#include "typedef.cpp"
-#include "intColumn.cpp"
-#include "lookup.cpp"
-
-#include "column.cpp"
-#include "table.cpp"
-#include "database.cpp"
-
-#include "socket.cpp"
-
 void debug(string s) {
 	cout << s << endl;
 }
@@ -43,6 +33,15 @@ void pause(string s) {
 	cin >> y;
 }
 
+#include "typedef.cpp"
+#include "intColumn.cpp"
+#include "lookup.cpp"
+
+#include "column.cpp"
+#include "table.cpp"
+#include "database.cpp"
+
+#include "socket.cpp"
 
 Database db;
 
@@ -69,7 +68,7 @@ void runServer(int port) {
 			ret["result"] = db.tables[table].select(root);
 
 		} else if (act == "eval") {
-			ret["ok"] = db.tables.begin()->second.eval(root["expr"]).json();
+			ret["result"] = db.tables.begin()->second.eval(root["expr"]).json();
 
 		} else if (act == "tables") {
 			for(auto &it: db.tables)
@@ -98,7 +97,7 @@ int main(int argc, char* argv[]) {
 	int port = 4567;
 
 	if (argc == 1) {
-		cout << "USAGE: ./" << argv[0] << " port [initial JSON]";
+		cout << "USAGE: ./" << argv[0] << " port [initial JSON]" << endl;
 		cout << "Using default port " << port << " for now." << endl;
 	}
 
@@ -108,12 +107,4 @@ int main(int argc, char* argv[]) {
 		preloadFile(argv[2]);
 
 	runServer(port);
-
-	vector<Val> x;
-
-	Val e1;
-	e1.type = STR;
-	e1.vStr = new string("asas");
-
-	x.push_back(e1);
 }
