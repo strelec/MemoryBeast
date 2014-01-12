@@ -261,17 +261,4 @@ private:
 			delete vTbl;
 		}
 	}
-
-	Val coerc(Val a, Val b,
-	function<i64(i64 a, i64 b)> i, function<real(real a, real b)> r) {
-		Val out;
-		if (a.type == INT && b.type == INT) {
-			out.type = INT;
-			out.vInt = i(a.vInt, b.vInt);
-		} else if (a.type == REAL || b.type == REAL) {
-			out.type = REAL;
-			out.vReal = r(a.realize(), b.realize());
-		}
-		return out;
-	}
 };
