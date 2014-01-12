@@ -68,7 +68,7 @@ struct EcoIntStep : public BaseIntStep<T> {
 		return true;
 	}
 
-	int operator[](u32 pos) {
+	i64 operator[](u32 pos) {
 		return base + this->v[pos];
 	}
 
@@ -91,7 +91,7 @@ struct IntStep : public BaseIntStep<T> {
 		return true;
 	}
 
-	int operator[](u32 pos) {
+	i64 operator[](u32 pos) {
 		return this->v[pos];
 	}
 };

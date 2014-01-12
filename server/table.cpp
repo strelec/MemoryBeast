@@ -57,7 +57,7 @@ struct Table {
 					path p;
 					for(u32 i=1; i<expr.size(); ++i)
 						p.push_back( expr[i].asString() );
-					return Val(columns[p][current]);
+					return columns[p][current];
 				} else {
 					Val first = eval(expr[1]);
 					switch(call[0]) {

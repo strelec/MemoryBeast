@@ -30,10 +30,12 @@ struct BaseIntVector {
 			cerr << "ERROR: IntColumn overflow (" << n << ")" << endl;
 			return false;
 		}
+		// DEVELOPMENT:
+		// assert(n == (*this)[size()-1]);
 		return true;
 	}
 
-	int operator[](u32 pos) {
+	i64 operator[](u32 pos) {
 		return at(pos);
 	}
 
@@ -109,7 +111,7 @@ private:
 		return 0;
 	}
 
-	int at(u32 pos) {
+	i64 at(u32 pos) {
 		if (pos < n8.size())
 			return n8[pos];
 		pos -= n8.size();

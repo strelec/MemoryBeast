@@ -130,7 +130,7 @@ struct Val {
 	}
 
 	bool operator>(const Val b) const {
-		return !(*this < b) && !(*this == b);
+		return !operator<(b) && !operator==(b);
 	}
 
 	void operator+=(const Val b) {
@@ -229,7 +229,7 @@ struct Val {
 		Json::Value val;
 		switch(type) {
 			case INT:
-				val = (Json::Value::Int)vInt;
+				val = (Json::Value::LargestInt)vInt;
 			break; case FORN:
 				val = (Json::Value::UInt)vForn;
 			break; case MFORN:
