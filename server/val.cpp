@@ -94,8 +94,8 @@ struct Val {
 	bool operator<(const Val b) const {
 		assert(type != MFORN && b.type != MFORN);
 
-		if (type < b.type)
-			return true;
+		if (type != b.type)
+			return type < b.type;
 
 		switch(type) {
 			case INT:   return vInt < b.vInt;
