@@ -7,6 +7,10 @@ struct Table {
 	u32 size = 0;
 	// current row
 	u32 current = 0;
+	// column cache
+	vector<Column*> cache;
+	// aggregation query or not
+	bool agg = false;
 
 	Table() {
 		index = new map<string, u32>;
@@ -24,12 +28,14 @@ struct Table {
 	typedef map<vector<Val>, vector<vector<Val>>> rs;
 
 	Json::Value select(Json::Value q) {
-		vector<string> aggs = {"max", "min", "sum", "count"};
-		bool agg = false;
+		agg = false;
+		cache.clear();
 
-		for(auto it: q["what"]) if (it.type() == Json::arrayValue)
-			if (aggs.end() != find(aggs.begin(), aggs.end(), it[0].asString()))
-				agg = true;
+		for(auto &it: q["what"])
+			analyse(it);
+		for(auto &it: q["group"])
+			analyse(it);
+		analyse(q["where"]);
 
 		const rs& res = agg ? selectAggregate(q) : selectNormal(q);
 
@@ -49,15 +55,35 @@ struct Table {
 		return ret;
 	}
 
-	Val eval(Json::Value expr) {
+	void analyse(Json::Value& expr) {
+		vector<string> aggs = {"max", "min", "sum", "count"};
+
+		if (expr.type() == Json::arrayValue) {
+			string call = expr[0].asString();
+
+			if (aggs.end() != find(aggs.begin(), aggs.end(), call))
+				agg = true;
+
+			if (call == "get") {
+				path p;
+				for(u32 i=1; i<expr.size(); ++i)
+					p.push_back( expr[i].asString() );
+
+				cache.push_back( &columns[p] );
+				expr[1] = (Json::Value::UInt)(cache.size()-1);
+			} else {
+				for(auto &it: expr)
+					analyse(it);
+			}
+		}
+	}
+
+	Val eval(Json::Value& expr) {
 		switch(expr.type()) {
 			case Json::arrayValue: {
 				string call = expr[0].asString();
 				if (call == "get") {
-					path p;
-					for(u32 i=1; i<expr.size(); ++i)
-						p.push_back( expr[i].asString() );
-					return columns[p][current];
+					return ( *cache[expr[1].asUInt()] )[current];
 				} else {
 					Val first = eval(expr[1]);
 					switch(call[0]) {
@@ -148,7 +174,7 @@ struct Table {
 
 private:
 
-	u32 doInsert(Json::Value root) {
+	u32 doInsert(Json::Value& root) {
 		assert(root.isObject());
 
 		u32 id = 0;
@@ -183,7 +209,7 @@ private:
 		return id;
 	}
 
-	rs selectNormal(Json::Value q) {
+	rs selectNormal(Json::Value& q) {
 		bool trueFilter = q["where"].type() == Json::nullValue;
 		i32 skip = q["limit"][0].asUInt();
 		u32 limit = q["limit"][1].asUInt();
