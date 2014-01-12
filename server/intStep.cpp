@@ -80,6 +80,11 @@ struct EcoIntStep : public BaseIntStep<T> {
 };
 
 template<class T>
+constexpr i64 BaseIntStep<T>::maxValue;
+template<class T>
+constexpr i64 EcoIntStep<T>::spare;
+
+template<class T>
 struct IntStep : public BaseIntStep<T> {
 	constexpr static int bits = sizeof(T)*8;
 	constexpr static i64 maxValue = (1LL << bits) - 1;
