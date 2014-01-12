@@ -1,9 +1,9 @@
 enum Type {
 	NIL = 0,
-	INT,
-	STR,
-	REAL,
 	BOOL,
+	INT,
+	REAL,
+	STR,
 
 	//foreign keys
 	FORN,
@@ -92,8 +92,7 @@ struct Val {
 	}
 
 	bool operator<(const Val b) const {
-		assert(type == b.type);
-		assert(type != MFORN);
+		assert(type != MFORN && b.type != MFORN);
 
 		if (type < b.type)
 			return true;
@@ -110,7 +109,7 @@ struct Val {
 	}
 
 	bool operator==(const Val b) const {
-		assert(type != MFORN);
+		assert(type != MFORN && b.type != MFORN);
 
 		if (type != b.type)
 			return false;
