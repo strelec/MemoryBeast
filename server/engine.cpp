@@ -45,13 +45,13 @@ void runServer(int port) {
 			ret["count"] = db.load(root["data"], table);
 
 		} else if (act == "select") {
-			if (root.isMember("table") &&
-			root["table"].type() == Json::stringValue) {
+			if (root["table"].type() == Json::stringValue) {
 				string table = root["table"].asString();
 				ret["result"] = db.tables[table].select(root);
 			} else {
-				map<path, Column> dummy;
-				ret["result"] = AST(root["expr"], dummy).eval(0).json();
+				Table temp;
+				temp.size = 1;
+				ret["result"] = temp.select(root);
 			}
 
 		} else if (act == "tables") {
