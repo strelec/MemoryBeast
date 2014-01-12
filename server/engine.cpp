@@ -1,3 +1,5 @@
+#include <cstdlib>
+
 #include <vector>
 #include <stack>
 #include <map>
@@ -13,31 +15,12 @@
 #include <jsoncpp/json/writer.h>
 using namespace std;
 
-typedef vector<string> path;
-
-string dispPath(path p) {
-	string s;
-	for(string &px: p)
-		s += px + ".";
-	s.pop_back();
-	return s;
-}
-
-void debug(string s) {
-	cout << s << endl;
-}
-
-void pause(string s) {
-	debug(s);
-	int y;
-	cin >> y;
-}
-
 #include "typedef.cpp"
 #include "intColumn.cpp"
 #include "lookup.cpp"
 
 #include "column.cpp"
+#include "ast.cpp"
 #include "table.cpp"
 #include "database.cpp"
 
@@ -55,20 +38,21 @@ void runServer(int port) {
 		reader.parse(query, root);
 
 		Json::Value ret = Json::objectValue;
-		Json::FastWriter writer;
 
 		string act = root["act"].asString();
 		if (act == "insert") {
 			string table = root["table"].asString();
-			ret["ok"] = db.load(root["data"], table);
+			ret["count"] = db.load(root["data"], table);
 
 		} else if (act == "select") {
-			string table = root["table"].asString();
-
-			ret["result"] = db.tables[table].select(root);
-
-		} else if (act == "eval") {
-			ret["result"] = db.tables.begin()->second.eval(root["expr"]).json();
+			if (root.isMember("table") &&
+			root["table"].type() == Json::stringValue) {
+				string table = root["table"].asString();
+				ret["result"] = db.tables[table].select(root);
+			} else {
+				map<path, Column> dummy;
+				ret["result"] = AST(root["expr"], dummy).eval(0).json();
+			}
 
 		} else if (act == "tables") {
 			for(auto &it: db.tables)
@@ -78,11 +62,12 @@ void runServer(int port) {
 			string table = root["table"].asString();
 			db.tables[table].cleanup();
 			ret["ok"] = true;
-		} else {
 
+		} else {
 			ret["error"] = "Invalid command.";
 		}
 
+		Json::FastWriter writer;
 		s.write( writer.write(ret) );
 	});
 }

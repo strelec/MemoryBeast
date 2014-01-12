@@ -1,5 +1,3 @@
-using namespace std;
-
 typedef double real;
 
 typedef uint8_t u8;
@@ -47,3 +45,13 @@ struct baseU {
 typedef baseU<3, u32> u24;
 typedef baseU<5, u64> u40;
 typedef baseU<6, u64> u48;
+
+typedef vector<string> path;
+
+string dispPath(path p) {
+	string s;
+	for(string &px: p)
+		s += px + ".";
+	s.pop_back();
+	return s;
+}
