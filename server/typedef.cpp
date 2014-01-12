@@ -1,3 +1,5 @@
+using namespace std;
+
 typedef double real;
 
 typedef uint8_t u8;
@@ -10,27 +12,38 @@ typedef int16_t i16;
 typedef int32_t i32;
 typedef int64_t i64;
 
-struct u24 {
-	u8 nums[3];
+template<int size, class B>
+struct baseU {
+	u8 nums[size];
 
-	u24() {
+	baseU() {
 		set(0);
 	}
-	u24(u32 n) {
+	baseU(B n) {
 		set(n);
 	}
 
-	operator u32() {
-		return (nums[0] << 16) | (nums[1] << 8) | nums[2];
+	operator B() {
+		B ret = 0;
+		for(int i=0; i<size; ++i) {
+			ret <<= 8;
+			ret |= nums[i];
+		}
+		return ret;
 	}
 
-	void set(u32 n) {
-		nums[0] = (n >> 16) & 0xFF;
-		nums[1] = (n >> 8) & 0xFF;
-		nums[2] = n & 0xFF;
+	void set(B n) {
+		for(int i=size-1; i>=0; --i) {
+			nums[i] = n;
+			n >>= 8;
+		}
 	}
 
-	void operator+=(u32 n) {
-		set(u32() + n);
+	void operator+=(B n) {
+		set(B() + n);
 	}
 };
+
+typedef baseU<3, u32> u24;
+typedef baseU<5, u64> u40;
+typedef baseU<6, u64> u48;

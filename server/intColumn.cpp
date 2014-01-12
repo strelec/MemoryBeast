@@ -8,7 +8,7 @@ struct EcoIntStep {
 	i64 base;
 	i64 max;
 
-	bool push(int n) {
+	bool push(i64 n) {
 		if (v.empty()) {
 			base = n-spare;
 			v.push_back(spare);
@@ -21,6 +21,7 @@ struct EcoIntStep {
 
 				i64 dec = base-n + min(diff, spare);
 				cerr << "INFO: Moving array by " << dec << endl;
+
 				base -= dec;
 				max += dec;
 				for(T &el: v)
@@ -30,7 +31,7 @@ struct EcoIntStep {
 					return false;
 			}
 			v.push_back(n-base);
-			max = std::max(n-base, max);
+			max = ::max(n-base, max);
 		}
 		return true;
 	}
@@ -39,7 +40,7 @@ struct EcoIntStep {
 		return base + v[pos];
 	}
 
-	void resize(int n) {
+	void resize(u32 n) {
 		if (v.empty()) {
 			v.resize(n);
 		} else {
@@ -49,6 +50,10 @@ struct EcoIntStep {
 
 	u32 size() {
 		return v.size();
+	}
+
+	bool empty() {
+		return v.empty();
 	}
 
 	void shrink_to_fit() {
@@ -71,7 +76,7 @@ struct IntStep {
 
 	vector<T> v;
 
-	bool push(int n) {
+	bool push(i64 n) {
 		if (n > maxValue)
 			return false;
 		v.push_back(n);
@@ -82,7 +87,7 @@ struct IntStep {
 		return v[pos];
 	}
 
-	void resize(int n) {
+	void resize(u32 n) {
 		if (v.empty()) {
 			v.resize(n);
 		} else {
@@ -92,6 +97,10 @@ struct IntStep {
 
 	u32 size() {
 		return v.size();
+	}
+
+	bool empty() {
+		return v.empty();
 	}
 
 	void shrink_to_fit() {
@@ -111,10 +120,12 @@ struct BaseIntVector {
 	T<u16> n16;
 	T<u24> n24;
 	T<u32> n32;
+	T<u40> n40;
+	T<u48> n48;
 
 	int overflows = 0;
 
-	bool push(int n) {
+	bool push(i64 n) {
 		int cur = current();
 		if (cur == 0)
 			if (!n8.push(n)) cur++;
@@ -124,7 +135,11 @@ struct BaseIntVector {
 			if (!n24.push(n)) cur++;
 		if (cur == 3)
 			if (!n32.push(n)) cur++;
-		if (cur == 4) {
+		if (cur == 4)
+			if (!n40.push(n)) cur++;
+		if (cur == 5)
+			if (!n48.push(n)) cur++;
+		if (cur == 6) {
 			overflows++;
 			cerr << "ERROR: IntColumn overflow (" << n << ")" << endl;
 			return false;
@@ -150,6 +165,10 @@ struct BaseIntVector {
 					n24.resize(n - siz + n24.size());
 				break; case 3:
 					n32.resize(n - siz + n32.size());
+				break; case 4:
+					n40.resize(n - siz + n40.size());
+				break; case 5:
+					n48.resize(n - siz + n48.size());
 			}
 		}
 	}
@@ -173,6 +192,8 @@ struct BaseIntVector {
 		n16.shrink_to_fit();
 		n24.shrink_to_fit();
 		n32.shrink_to_fit();
+		n40.shrink_to_fit();
+		n48.shrink_to_fit();
 	}
 
 	void debug() {
@@ -184,16 +205,20 @@ struct BaseIntVector {
 
 private:
 
-	inline array<u32, 4> sizes() {
-		return {n8.size(), n16.size(), n24.size(), n32.size()};
+	inline array<u32, 6> sizes() {
+		return {n8.size(), n16.size(), n24.size(), n32.size(), n40.size(), n48.size()};
 	}
 
 	inline int current() {
-		if (n32.size())
+		if (!n48.empty())
+			return 5;
+		if (!n40.empty())
+			return 4;
+		if (!n32.empty())
 			return 3;
-		if (n24.size())
+		if (!n24.empty())
 			return 2;
-		if (n16.size())
+		if (!n16.empty())
 			return 1;
 		return 0;
 	}
@@ -210,6 +235,12 @@ private:
 		pos -= n24.size();
 		if (pos < n32.size())
 			return n32[pos];
+		pos -= n32.size();
+		if (pos < n40.size())
+			return n40[pos];
+		pos -= n40.size();
+		if (pos < n48.size())
+			return n48[pos];
 		cerr << "ERROR: IntColumn index out of bounds" << endl;
 		return -1;
 	}
