@@ -2,15 +2,11 @@ struct Table {
 	map<path, Column> columns;
 	map<string, u32> *index = nullptr;
 
+	typedef map<vector<Val>, vector<vector<Val>>> rs;
+
 	// current path stack
 	path cur;
 	u32 size = 0;
-	// current row
-	u32 current = 0;
-	// column cache
-	vector<Column*> cache;
-	// aggregation query or not
-	bool agg = false;
 
 	Table() {
 		index = new map<string, u32>;
@@ -25,19 +21,28 @@ struct Table {
 		index = nullptr;
 	}
 
-	typedef map<vector<Val>, vector<vector<Val>>> rs;
-
 	Json::Value select(Json::Value q) {
-		agg = false;
-		cache.clear();
+		bool agg = false;
 
-		for(auto &it: q["what"])
-			analyse(it);
+		vector<AST> what;
+		for(auto &it: q["what"]) {
+			what.push_back( AST(it, columns) );
+			if (what.back().isAgg())
+				agg = true;
+		}
+
+		AST where(q["where"], columns);
+
+		vector<AST> group;
 		for(auto &it: q["group"])
-			analyse(it);
-		analyse(q["where"]);
+			group.push_back( AST(it, columns) );
 
-		const rs& res = agg ? selectAggregate(q) : selectNormal(q);
+		i32 skip = q["limit"][0].asUInt();
+		u32 limit = q["limit"][1].asUInt();
+
+		const rs& res = agg ?
+			selectAggregate(what, where, group, skip, limit) :
+			selectNormal(what, where, group, skip, limit);
 
 		// output json fron data structure
 		Json::Value ret = Json::arrayValue;
@@ -53,98 +58,6 @@ struct Table {
 			ret.append(group);
 		}
 		return ret;
-	}
-
-	void analyse(Json::Value& expr) {
-		vector<string> aggs = {"max", "min", "sum", "count"};
-
-		if (expr.type() == Json::arrayValue) {
-			string call = expr[0].asString();
-
-			if (aggs.end() != find(aggs.begin(), aggs.end(), call))
-				agg = true;
-
-			if (call == "get") {
-				path p;
-				for(u32 i=1; i<expr.size(); ++i)
-					p.push_back( expr[i].asString() );
-
-				cache.push_back( &columns[p] );
-				expr[1] = (Json::Value::UInt)(cache.size()-1);
-			} else {
-				for(auto &it: expr)
-					analyse(it);
-			}
-		}
-	}
-
-	Val eval(Json::Value& expr) {
-		switch(expr.type()) {
-			case Json::arrayValue: {
-				string call = expr[0].asString();
-				if (call == "get") {
-					return ( *cache[expr[1].asUInt()] )[current];
-				} else {
-					Val first = eval(expr[1]);
-					switch(call[0]) {
-						case '=':
-							if (call == "=" || call == "==")
-								return toVal( eval(expr[1]) == eval(expr[2]) );
-						case '!':
-							if (call == "!=")
-								return toVal( eval(expr[1]) != eval(expr[2]) );
-
-						break; case '+':
-							if (expr.size() >= 3)
-								first += eval(expr[2]);
-						break; case '-':
-							if (expr.size() >= 3)
-								first += eval(expr[2]);
-							if (expr.size() >= 2)
-								first.inv();
-						break; case '*':
-							if (expr.size() >= 3)
-								first *= eval(expr[2]);
-						break; case '/':
-							if (expr.size() >= 3)
-								first /= eval(expr[2]);
-						break; case '^':
-							if (expr.size() >= 3)
-								first ^= eval(expr[2]);
-
-						break; case 'o':
-							if (call == "or")
-								return toVal( eval(expr[1]).truey() || eval(expr[2]).truey() );
-						break; case 'a':
-							if (call == "and")
-								return toVal( eval(expr[1]).truey() && eval(expr[2]).truey() );
-						break; case 'n':
-							if (call == "not")
-								return toVal( !eval(expr[1]).truey() );
-
-						break; case 'm':
-							if (call == "max" || call == "min")
-								return first;
-						break; case 's':
-							if (call == "sum")
-								return first;
-						break; case 'c':
-							if (call == "count") {
-								Val r;
-								r.type = INT;
-								r.vInt = (first.type == NIL) ? 0 : 1;
-								return r;
-							}
-					}
-					return first;
-				}
-			} break;
-			case Json::objectValue:
-				cerr << "Invalid expression with Hash." << endl;
-			break; default:
-				return Val(expr);
-		}
-		return Val();
 	}
 
 	u32 insert(Json::Value root) {
@@ -209,28 +122,24 @@ private:
 		return id;
 	}
 
-	rs selectNormal(Json::Value& q) {
-		bool trueFilter = q["where"].type() == Json::nullValue;
-		i32 skip = q["limit"][0].asUInt();
-		u32 limit = q["limit"][1].asUInt();
-
+	rs selectNormal(vector<AST> &what, AST &where, vector<AST> &group, i32 skip, u32 limit) {
 		rs res;
 		vector<Val> key;
 		vector<Val> vals;
 
-		for(current=0; current<size; ++current) {
-			if (trueFilter || eval(q["where"]).truey()) {
+		for(u32 i=0; i<size; ++i) {
+			if (where.eval(i).truey()) {
 				key.clear();
-				for(auto it: q["group"])
-					key.push_back( eval(it) );
+				for(auto it: group)
+					key.push_back( it.eval(i) );
 
 				if (--skip < 0) {
 					if (limit-- == 0)
 						break;
 
 					vals.clear();
-					for(auto it: q["what"])
-						vals.push_back( eval(it) );
+					for(auto it: what)
+						vals.push_back( it.eval(i) );
 
 					res[key].push_back(vals);
 				}
@@ -239,20 +148,16 @@ private:
 		return res;
 	}
 
-	rs selectAggregate(Json::Value q) {
-		bool trueFilter = q["where"].type() == Json::nullValue;
-		i32 skip = q["limit"][0].asUInt();
-		u32 limit = q["limit"][1].asUInt();
-
+	rs selectAggregate(vector<AST> &what, AST &where, vector<AST> &group, i32 skip, u32 limit) {
 		rs res;
 		vector<Val> key;
 		vector<Val> vals;
 
-		for(current=0; current<size; ++current) {
-			if (trueFilter || eval(q["where"]).truey()) {
+		for(u32 i=0; i<size; ++i) {
+			if (where.eval(i).truey()) {
 				key.clear();
-				for(auto it: q["group"])
-					key.push_back( eval(it) );
+				for(auto it: group)
+					key.push_back( it.eval(i) );
 
 				auto pos = res.find(key);
 				if (pos == res.end()) {
@@ -260,8 +165,8 @@ private:
 						limit--;
 
 						vals.clear();
-						for(auto it: q["what"])
-							vals.push_back( eval(it) );
+						for(auto it: what)
+							vals.push_back( it.eval(i) );
 
 						res[key].push_back(vals);
 					} else {
@@ -270,44 +175,13 @@ private:
 				} else if (!pos->second.empty()) { // update previous aggregate value
 					vector<Val> &prev = pos->second.back();
 
-					int i = 0;
-					for(auto it: q["what"]) {
-						if (it.type() == Json::arrayValue) {
-							string call = it[0].asString();
-							switch(call[0]) {
-								case 'm':
-									if (call == "max") {
-										Val first = eval(it[1]);
-										if (prev[i] < first)
-											prev[i] = first;
-									}
-									if (call == "min") {
-										Val first = eval(it[1]);
-										if (prev[i] > first)
-											prev[i] = first;
-									}
-								break; case 's':
-									if (call == "sum")
-										prev[i] += eval(it[1]);
-								break; case 'c':
-									if (call == "count")
-										if (eval(it[1]).type != NIL)
-											++prev[i];
-							}
-						}
-						i++;
-					}
+					int col = 0;
+					for(auto it: what)
+						it.aggregate(prev[col++], i);
 				}
 			}
 		}
 		return res;
-	}
-
-	Val toVal(bool b) {
-		Val v;
-		v.type = BOOL;
-		v.vBool = b;
-		return v;
 	}
 
 	Json::Value convert(vector<Val> vec) {
