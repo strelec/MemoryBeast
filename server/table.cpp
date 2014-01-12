@@ -5,6 +5,8 @@ struct Table {
 	// current path stack
 	path cur;
 	u32 size = 0;
+	// current row
+	u32 current = 0;
 
 	Table() {
 		index = new map<string, u32>;
@@ -19,73 +21,21 @@ struct Table {
 		index = nullptr;
 	}
 
-	u32 current = 0;
-	bool simple = true;
-	bool agg = false;
+	typedef map<vector<Val>, vector<vector<Val>>> rs;
 
 	Json::Value select(Json::Value q) {
-		simple = true;
-		agg = false;
+		vector<string> aggs = {"max", "min", "sum", "count"};
+		bool agg = false;
 
-		map<vector<Val>, vector<vector<Val>>> res;
-		vector<Val> key;
-		vector<Val> vals;
+		for(auto it: q["what"]) if (it.type() == Json::arrayValue)
+			if (aggs.end() != find(aggs.begin(), aggs.end(), it[0].asString()))
+				agg = true;
 
-		bool trueFilter = q["where"].type() == Json::nullValue;
-		for(current=0; current<size; ++current) {
-			if (trueFilter || eval(q["where"]).truey()) {
-				key.clear();
-				for(auto it: q["group"]) {
-					key.push_back( eval(it) );
-				}
-
-				if (!agg || res[key].empty()) {
-
-					vals.clear();
-					for(auto it: q["what"]) {
-						vals.push_back( eval(it) );
-					}
-					res[key].push_back(vals);
-
-				} else { // correct previous row to aggregate
-					vector<Val> &prev = res[key].back();
-
-					int i = 0;
-					for(auto it: q["what"]) {
-						if (it.type() == Json::arrayValue) {
-							string call = it[0].asString();
-							switch(call[0]) {
-								case 'm':
-									if (call == "max") {
-										Val first = eval(it[1]);
-										if (prev[i] < first)
-											prev[i] = first;
-									}
-									if (call == "min") {
-										Val first = eval(it[1]);
-										if (prev[i] > first)
-											prev[i] = first;
-									}
-								break; case 's':
-									if (call == "sum") {
-										prev[i] += eval(it[1]);
-									}
-								break; case 'c':
-									if (call == "count") {
-										if (eval(it[1]).type != NIL)
-											++prev[i];
-									}
-							}
-						}
-						i++;
-					}
-				}
-			}
-		}
+		const rs& res = agg ? selectAggregate(q) : selectNormal(q);
 
 		// output json fron data structure
 		Json::Value ret = Json::arrayValue;
-		for(auto &it: res) {
+		for(auto &it: res) if (!it.second.empty()) {
 			Json::Value tbl = Json::arrayValue;
 			for(auto &vl: it.second)
 				tbl.append(convert(vl));
@@ -104,8 +54,6 @@ struct Table {
 			case Json::arrayValue: {
 				string call = expr[0].asString();
 				if (call == "get") {
-					simple = false;
-
 					path p;
 					for(u32 i=1; i<expr.size(); ++i)
 						p.push_back( expr[i].asString() );
@@ -149,18 +97,13 @@ struct Table {
 								return toVal( !eval(expr[1]).truey() );
 
 						break; case 'm':
-							if (call == "max" || call == "min") {
-								agg = true;
+							if (call == "max" || call == "min")
 								return first;
-							}
 						break; case 's':
-							if (call == "sum") {
-								agg = true;
+							if (call == "sum")
 								return first;
-							}
 						break; case 'c':
 							if (call == "count") {
-								agg = true;
 								Val r;
 								r.type = INT;
 								r.vInt = (first.type == NIL) ? 0 : 1;
@@ -238,6 +181,100 @@ private:
 		}
 
 		return id;
+	}
+
+	rs selectNormal(Json::Value q) {
+		bool trueFilter = q["where"].type() == Json::nullValue;
+		i32 skip = q["limit"][0].asUInt();
+		u32 limit = q["limit"][1].asUInt();
+
+		rs res;
+		vector<Val> key;
+		vector<Val> vals;
+
+		for(current=0; current<size; ++current) {
+			if (trueFilter || eval(q["where"]).truey()) {
+				key.clear();
+				for(auto it: q["group"])
+					key.push_back( eval(it) );
+
+				if (--skip < 0) {
+					if (limit-- == 0)
+						break;
+
+					vals.clear();
+					for(auto it: q["what"])
+						vals.push_back( eval(it) );
+
+					res[key].push_back(vals);
+				}
+			}
+		}
+		return res;
+	}
+
+	rs selectAggregate(Json::Value q) {
+		bool trueFilter = q["where"].type() == Json::nullValue;
+		i32 skip = q["limit"][0].asUInt();
+		u32 limit = q["limit"][1].asUInt();
+
+		rs res;
+		vector<Val> key;
+		vector<Val> vals;
+
+		for(current=0; current<size; ++current) {
+			if (trueFilter || eval(q["where"]).truey()) {
+				key.clear();
+				for(auto it: q["group"])
+					key.push_back( eval(it) );
+
+				auto pos = res.find(key);
+				if (pos == res.end()) {
+					if (--skip < 0 && limit > 0) {
+						limit--;
+
+						vals.clear();
+						for(auto it: q["what"])
+							vals.push_back( eval(it) );
+
+						res[key].push_back(vals);
+					} else {
+						res[key];
+					}
+				} else if (!pos->second.empty()) { // update previous aggregate value
+					vector<Val> &prev = pos->second.back();
+
+					int i = 0;
+					for(auto it: q["what"]) {
+						if (it.type() == Json::arrayValue) {
+							string call = it[0].asString();
+							switch(call[0]) {
+								case 'm':
+									if (call == "max") {
+										Val first = eval(it[1]);
+										if (prev[i] < first)
+											prev[i] = first;
+									}
+									if (call == "min") {
+										Val first = eval(it[1]);
+										if (prev[i] > first)
+											prev[i] = first;
+									}
+								break; case 's':
+									if (call == "sum")
+										prev[i] += eval(it[1]);
+								break; case 'c':
+									if (call == "count")
+										if (eval(it[1]).type != NIL)
+											++prev[i];
+							}
+						}
+						i++;
+					}
+				}
+			}
+		}
+		return res;
 	}
 
 	Val toVal(bool b) {

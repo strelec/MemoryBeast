@@ -53,6 +53,10 @@ class MemoryBeast
 		raise 'You have to specify the table when selecting.' unless params.key? :table
 		raise 'You have to select at least one column.' if !params.key?(:what) || params[:what].empty?
 
+		limit = params[:limit] || 30
+		limit = [0, limit] unless Array === limit
+		limit = (limit+[nil]*2).first(2).map(&:to_i)
+
 		group = (params[:group] || []).map { |el|
 			Expression.new(el).to_a
 		}
@@ -88,7 +92,8 @@ class MemoryBeast
 			table: params[:table],
 			what: what,
 			where: Expression.new(params[:where]).to_a,
-			group: group
+			group: group,
+			limit: limit,
 		}
 
 		clients.each { |c|
