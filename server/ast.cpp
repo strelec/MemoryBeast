@@ -16,7 +16,8 @@ struct AST {
 	const vector<string> calls = {
 		"=", "==", "!=",
 		"+", "-", "*", "/", "^",
-		"or", "and", "not"
+		"or", "and", "not",
+		"length", "position"
 	};
 	const vector<string> aggs = {"max", "min", "sum", "count"};
 
@@ -86,6 +87,27 @@ struct AST {
 				return toVal( first.truey() && params[1].eval(row).truey() );
 			break; case 10: // not
 				return toVal( !first.truey() );
+
+			break; case 11: { // length
+				if (first.type != STR)
+					return Val();
+				Val r;
+				r.type = INT;
+				r.vInt = first.vStr->size();
+				return r;
+			} break; case 12: { //position
+				if (first.type != STR)
+					return Val();
+				Val needle = params[1].eval(row);
+				if (needle.type != STR)
+					return Val();
+
+				Val r;
+				r.type = INT;
+				u32 pos = first.vStr->find( *needle.vStr );
+				r.vInt = (pos == string::npos) ? 0 : pos+1;
+				return r;
+			}
 		}
 
 		if (op == AGG) switch(func) {
