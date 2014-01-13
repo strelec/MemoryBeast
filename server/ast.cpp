@@ -19,7 +19,7 @@ struct AST {
 		"or", "and", "not",
 		"length", "position"
 	};
-	const vector<string> aggs = {"max", "min", "sum", "count"};
+	const vector<string> aggs = {"min", "max", "sum", "count"};
 
 	AST(Json::Value& expr, map<path, Column>& columns) {
 		op = VAL;
