@@ -37,8 +37,8 @@ struct Table {
 		for(auto &it: q["group"])
 			group.push_back( AST(it, columns) );
 
-		i32 skip = q["limit"][0].asUInt();
-		u32 limit = q["limit"][1].asUInt();
+		i32 skip = q["offset"].asUInt();
+		u32 limit = q["limit"].asUInt();
 
 		const rs& res = agg ?
 			selectAggregate(what, where, group, skip, limit) :

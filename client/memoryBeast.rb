@@ -1,6 +1,7 @@
 require 'json'
 
 require_relative 'client'
+require_relative 'query'
 
 def debug(str)
 	$stderr.puts str
@@ -50,10 +51,6 @@ class MemoryBeast
 	end
 
 	def select(params)
-		limit = params[:limit] || 30
-		limit = [0, limit] unless Array === limit
-		limit = (limit+[nil]*2).first(2).map(&:to_i)
-
 		group = (params[:group] || []).map { |el|
 			Expression.new(el).to_a
 		}
@@ -75,7 +72,7 @@ class MemoryBeast
 		}
 
 		result = {}
-		params[:what].each { |k, v|
+		params[:select].each { |k, v|
 			ex = Expression.new(v).to_a
 
 			result[k] = if Array === ex && ex[0] == 'avg'
@@ -87,14 +84,15 @@ class MemoryBeast
 
 
 		params = {
-			table: params[:table],
+			table: params[:from],
 			what: what,
 			where: if params.has_key? :where
 				Expression.new(params[:where]).to_a
 			else true; end,
 
 			group: group,
-			limit: limit,
+			limit: params[:limit] || 100,
+			offset: params[:offset] || 0,
 		}
 
 		clients.each { |c|
@@ -114,10 +112,15 @@ class MemoryBeast
 		} ]
 	end
 
+	def sql(query)
+		q = Query.new query
+		select q
+	end
+
 	def subtable(key, rows, result)
 		rows.map { |row|
 			Hash[ result.map { |kr, vr|
-				[ kr, case vr.first
+				[ kr.to_sym, case vr.first
 				when :g
 					key[vr.last]
 				when :w
