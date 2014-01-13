@@ -91,8 +91,7 @@ struct AST {
 			break; case 11: { // length
 				if (first.type != STR)
 					return Val();
-				Val r;
-				r.type = INT;
+				Val r(INT);
 				r.vInt = first.vStr->size();
 				return r;
 			} break; case 12: { //position
@@ -102,8 +101,7 @@ struct AST {
 				if (needle.type != STR)
 					return Val();
 
-				Val r;
-				r.type = INT;
+				Val r(INT);
 				u32 pos = first.vStr->find( *needle.vStr );
 				r.vInt = (pos == string::npos) ? 0 : pos+1;
 				return r;
@@ -115,8 +113,7 @@ struct AST {
 				// min & max & sum
 				return first;
 			case 3: // count
-				Val r;
-				r.type = INT;
+				Val r(INT);
 				r.vInt = (first.type == NIL) ? 0 : 1;
 				return r;
 		}
@@ -184,8 +181,7 @@ private:
 	}
 
 	Val toVal(bool b) {
-		Val v;
-		v.type = BOOL;
+		Val v(BOOL);
 		v.vBool = b;
 		return v;
 	}

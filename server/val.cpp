@@ -22,8 +22,8 @@ struct Val {
 		vector<u32> *vTbl;
 	};
 
-	Val() {
-		type = NIL;
+	Val(Type t = NIL) {
+		type = t;
 	}
 	Val(const Val &b) {
 		type = b.type;
