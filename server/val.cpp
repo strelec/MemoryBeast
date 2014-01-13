@@ -60,7 +60,7 @@ struct Val {
 			break; case Json::booleanValue:
 				type = BOOL;
 				vBool = val.asBool();
-			default:
+			break; default:
 				type = NIL;
 		}
 	}
