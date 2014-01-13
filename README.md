@@ -90,6 +90,30 @@ result = comp.select(
 )
 ```
 
+Operations & functions
+===
+
+Example of a query:
+
+```sql
+SELECT SUM(LENGTH(id)), AVG(load), (3*10-2)^2 AS squared
+FROM data
+WHERE public AND POSITION(userAgent, "Firefox")
+GROUP BY 10 * version
+LIMIT 100, 30
+```
+
+Operations
+---
+
+- Aggregations: `MIN`, `MAX`, `SUM`, `COUNT`, `AVG`
+- Comparison: `=` (alias `==`), `!=`
+- Arithmetic: `+`, `-`, `*`, `/`, `^` (exponentation)
+- Logic: `OR`, `AND`, `NOT`
+- String: `LENGTH`, `POSITION(haystack, needle)` (substring search, 0 if not found)
+
+Easy to add new ones.
+
 The JSON communication protocol
 ---
 
@@ -113,17 +137,3 @@ It then waits for the response from all the clusters:
 {"creative.id":"28c05792","id":"s1378068738x5223a90253b100x73986990"}
 {"creative.id":"dbae1ef6","id":"s1378093114x5224083a3d77b0x52199543"}
 ```
-
-To-Do
----
-
-- [ ] Add support to write SQL directly, such as:
-
-```SQL
-SELECT MAX(a*b) AS max, COUNT(id) AS count, c
-FROM data
-WHERE 2*d = e AND ISNULL(f)
-GROUP BY c, 10*b
-```
-
-This is easy to do as the expressions parsers are already made.
