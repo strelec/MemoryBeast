@@ -83,11 +83,23 @@ Then just make queries:
 
 ```ruby
 result = comp.select(
-	table: 'data',
-	what: {average: 'avg(adServerLoadAvg)', max: "max(adServerLoadAvg)"},
+	select: {average: 'avg(adServerLoadAvg)', max: 'max(adServerLoadAvg)'},
+	from: 'data',
 	where: 'adServerLoadAvg != 0.0',
-	group: ['sdk', 'creativeVersion']
+	group: ['sdk', 'creativeVersion'],
 )
+```
+
+or in plain SQL:
+
+```ruby
+result = comp.sql <<-SQL
+	SELECT
+		AVG(adServerLoadAvg) AS average, MAX(adServerLoadAvg)
+	FROM data
+	WHERE adServerLoadAvg != 0.0
+	GROUP BY sdk, creativeVersion
+SQL
 ```
 
 Operations & functions
