@@ -86,7 +86,14 @@ private
 	end
 
 	def expr(parts)
-		parts.join
+		ret = []
+		parts.size.times { |i|
+			ret << parts[i]
+			if parts[i+1] && parts[i][-1] + parts[i+1][0] =~ /[[:alnum:]]{2}/
+				ret << ' '
+			end
+		}
+		ret.join
 	end
 
 	def tokenize(str)

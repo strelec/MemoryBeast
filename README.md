@@ -132,24 +132,49 @@ Easy to add new ones.
 The JSON communication protocol
 ---
 
+```sql
+SELECT
+	COUNT(adServerLoadAvg) AS total,
+	AVG(adServerLoadAvg) AS expected
+FROM data
+GROUP BY sdk
+```
+
 During the execution of the query, the communication to servers and back is clearly visible. For the above query, the client first sends it in an agreed-upon form to all the instances.
+Notice how `AVG` gets separated into `COUNT` and `SUM`.
 
 ```json
-127.0.0.1:5000 << {"act":"select","table":"data","what":[["count",1]],"where":true,"group":[["get","sdk"]],"limit":100,"offset":0}
-127.0.0.1:5001 << {"act":"select","table":"data","what":[["count",1]],"where":true,"group":[["get","sdk"]],"limit":100,"offset":0}
-
+127.0.0.1:5000 << {"act":"select","table":"data","what":[["count",["get","adServerLoadAvg"]],["sum",["get","adServerLoadAvg"]]],"where":true,"group":[["get","sdk"]],"limit":100,"offset":0}
+127.0.0.1:5001 << {"act":"select","table":"data","what":[["count",["get","adServerLoadAvg"]],["sum",["get","adServerLoadAvg"]]],"where":true,"group":[["get","sdk"]],"limit":100,"offset":0}
 ```
 
 It then waits for the response from all of them:
 
 ```json
-127.0.0.1:5000 1.21s >> {"result":[[["AdMarvel"],[[168315]]],[["Mobclix"],[[13306]]],[["MobileWeb"],[[65003]]]]}
-127.0.0.1:5001 1.41s >> {"result":[[["AdMarvel"],[[168054]]],[["Mobclix"],[[13433]]],[["MobileWeb"],[[64513]]]]}
+127.0.0.1:5000 2.06s >> {"result":[[["AdMarvel"],[[168315,2960.050000000717]]],[["Mobclix"],[[13306,220.2700000000012]]],[["MobileWeb"],[[65003,1042.479999999818]]]]}
+127.0.0.1:5001 2.19s >> {"result":[[["AdMarvel"],[[168054,2954.320000000776]]],[["Mobclix"],[[13433,247.7700000000005]]],[["MobileWeb"],[[64513,1072.909999999805]]]]}
 ```
 
 ... and assembles (reduces) it into the final result:
 ```json
-{"sdk":"AdMarvel","count":336369}
-{"sdk":"Mobclix", "count":26739}
-{"sdk":"MobileWeb,"count":129516}
+{
+     [ "AdMarvel" ] => [
+        [0] {
+               :total => 336369,
+            :expected => 0.017582981784889488
+        }
+    ],
+      [ "Mobclix" ] => [
+        [0] {
+               :total => 26739,
+            :expected => 0.017504020344814752
+        }
+    ],
+    [ "MobileWeb" ] => [
+        [0] {
+               :total => 129516,
+            :expected => 0.016333039933287184
+        }
+    ]
+}
 ```

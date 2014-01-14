@@ -51,6 +51,9 @@ class MemoryBeast
 	end
 
 	def select(params)
+
+		# PREPARE
+
 		group = (params[:group] || []).map { |el|
 			Expression.new(el).to_a
 		}
@@ -59,14 +62,14 @@ class MemoryBeast
 		find = -> ex {
 			pos = group.index ex
 			if pos
-				[:g, pos]
+				[:key, pos]
 			else
 				pos = what.index ex
 				if pos
-					[:w, pos]
+					[:val, pos]
 				else
 					what << ex
-					[:w, what.size-1]
+					[:val, what.size-1]
 				end
 			end
 		}
@@ -75,13 +78,20 @@ class MemoryBeast
 		params[:select].each { |k, v|
 			ex = Expression.new(v).to_a
 
-			result[k] = if Array === ex && ex[0] == 'avg'
-				[ :a, find[['sum', ex.last]], find[['count', ex.last]] ]
+			result[k] = if Array === ex
+				if c ex[0], :avg
+					[ :avg, find[['sum', ex.last]], find[['count', ex.last]] ]
+				elsif [:min, :max, :sum, :count].any? {|e| c ex[0], e}
+					[ ex[0].to_sym, find[ex] ]
+				else
+					find[ex]
+				end
 			else
 				find[ex]
 			end
 		}
 
+		# EXECUTE
 
 		params = {
 			table: params[:from],
@@ -99,6 +109,8 @@ class MemoryBeast
 			c.run :select, params
 		}
 
+		# REDUCE
+
 		table = {}
 		clients.each { |c|
 			results = Hash[ c.result['result'] ]
@@ -115,19 +127,6 @@ class MemoryBeast
 	def sql(query)
 		q = Query.new query
 		select q
-	end
-
-	def subtable(key, rows, result)
-		rows.map { |row|
-			Hash[ result.map { |kr, vr|
-				[ kr.to_sym, case vr.first
-				when :g
-					key[vr.last]
-				when :w
-					row[vr.last]
-				end ]
-			} ]
-		}
 	end
 
 	def cleanup(table='data')
@@ -149,4 +148,63 @@ class MemoryBeast
 			}
 		}
 	end
+
+private
+
+	def subtable(key, rows, result)
+		agg = result.any? { |t|
+			not [:key, :val].include? t
+		}
+
+		ev = -> cell, row {
+			case cell.first
+			when :key
+				key[cell.last]
+			when :val
+				row[cell.last]
+			when :avg
+				[ ev[cell[1], row], ev[cell[2], row] ]
+			else
+				ev[cell.last, row]
+			end
+		}
+
+		out = []
+		rows.map { |row|
+			current = Hash[ result.map { |k, v|
+				[ k, ev[v, row] ]
+			} ]
+
+			if agg && !out.empty?
+				out.last.merge!(current) { |ky, a, b|
+					case result[ky].first
+					when :count, :sum
+						a+b
+					when :min
+						[a,b].min
+					when :max
+						[a,b].max
+					when :avg
+						[a[0]+b[0], a[1]+b[1]]
+					else
+						a
+					end
+				}
+			else
+				out << current
+			end
+		}
+
+		out.map { |o|
+			Hash[ o.map { |k, v|
+				[ k.to_sym, Array === v ? v[0]/v[1] : v ]
+			} ]
+		}
+	end
+
+
+	def c(a, b)
+		a.to_s.casecmp(b.to_s) == 0
+	end
+
 end
