@@ -8,7 +8,8 @@ In terms of classic map-reduce paradigm, you could say the clusters are map and 
 Limitations
 ---
 
-The only permamanent limitation of this engine is inability to join multiple JSON files together. You can have multiple tables, but you can only select from one at the time.
+- Inability to join multiple JSON files together. You can have multiple tables (for multiple users / datasets), but you can only select from one at the time.
+- Insert only. No deletions
 
 Server
 ===
@@ -52,9 +53,9 @@ This storage engine is very memory efficient, using only about 10% memory compar
 Notes
 ---
 
-- The cluster uses only one processor core, so you should run as many instances per box as there are cores to ensure maximum efficency.
+- The instance uses only one processor core, so you should run as many instances per box as there are cores to ensure maximum efficiency.
 
-- The C++ compiler requires C++11 compatiblity. GCC is fine if you pass `-std=c++11` flag to it. We recommend compiling with the `-O3` flag for performance. `-funroll-loops -march=native` only for the crazy ones.
+- You have to have jsoncpp 0.6.0 or higher installed. It is currently a release candidate, so make sure you got the correct version.
 
 Client
 ===
