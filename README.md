@@ -1,7 +1,7 @@
 MemoryBeast
 ===========
 
-MemoryBeast enables you to explore your big JSON and XML documents with SQL statements. It is really fast, but moreover, it can utilize all the cores of your processor. What is more, it can scale to multiple computers / servers.
+MemoryBeast enables you to explore your big JSON and XML documents with SQL statements. It is really fast, but moreover, it can utilize all the cores of your processor. What is more, it can scale to multiple machines / servers.
 
 It is very easy to use and written in C++ for speed and memory efficiency.
 
@@ -14,17 +14,17 @@ Limitations
 - Inability to join multiple JSON files together. You can have multiple tables available at once (for multiple users / datasets), but you can only select from one at the time.
 - Insert only (warehousing). No deletions or updates.
 
-Server
+Worker
 ===
 
-To run the server, you have to compile `engine.cpp` first. After that is done, you can then run the server:
+To run a worker, you have to compile `engine.cpp` first. After that is done, execute:
 
 ```
 ./engine 5001
 ```
 
-Here, 5001 is the port number where the instance listens for the input.
-If you want to preload the data (to avoid network traffic), you are allowed to specify the second argument, the file name:
+Here, 5001 is the port number where the worker listens for the input.
+If you want to preload the data (to avoid network traffic), you are allowed to specify the second argument, the file name of the initial set:
 
 ```
 ./engine 5001 initial.json
@@ -52,13 +52,12 @@ This storage engine is very memory efficient, using only about 10% memory compar
 - **Range-based integer values:** In case of timestamps, they are usually big numbers, but their range is small, it usually spans just a few days or maybe months. This allows us to save the base and report the number relative to it, using smaller integer to save it.
 - **Three-byte integers:** The engine supports three byte integers, saving one byte per record in columns that range in value form 2¹⁶ to the 2²⁴.
 - **Packing boolean values:** `True` and `False` only consume one bit as we pack eight of these into one byte. This is actually the default behaviour of the C++ `vector<bool>` data structure.
-
-- **Auto normalisation** (planned for 1.1): When you insert the json, you typically have to denormalise 1:n and n:n relations by storing the same data multiple times. If you supply the `id` field with the subobject, it is stored only once per unique id.
+- **Auto normalisation (planned for 1.1):** When you insert the json, you typically have to denormalise 1:n and n:n relations by storing the same data multiple times. If you supply the `id` field with the subobject, it is stored only once per unique id.
 
 Notes
 ---
 
-- The instance uses only one processor core, so you should run as many instances per box as there are cores to ensure maximum efficiency.
+- One worker uses only one processor core, so you should run as many workers per box as there are cores to ensure maximum efficiency.
 
 - You have to have jsoncpp 0.6.0 or higher installed. It is currently a release candidate, so make sure you got the correct version.
 
@@ -68,7 +67,7 @@ Client
 How to use it
 ---
 
-First, you have to specify all the instances with their IP addreses:
+First, you have to specify all the workers with their IP addreses:
 
 ```ruby
 comp = MemoryBeast.new({
@@ -77,9 +76,9 @@ comp = MemoryBeast.new({
 })
 ```
 
-The second number beside the IP designates how should the client divide the future data amongst the instances. Instance with two times higher number should have twice as much RAM & CPU power.
+The second number beside the IP designates in what proportion should the client divide the future data amongst the workers. A worker with two times higher number should have twice as much RAM & CPU power.
 
-Then you are free to load the data (if you didn't do that on server initialization). Specify the file and table name:
+Then you are free to load the data (if you didn't do that on worker initialization). Specify the file and table name:
 
 ```ruby
 comp.load '../../sets/tiny.json', 'data'
@@ -143,7 +142,7 @@ FROM data
 GROUP BY sdk
 ```
 
-During the execution of the query, the communication to servers and back is clearly visible. For the above query, the client first sends it in an agreed-upon form to all the instances.
+During the execution of the query, the communication to workers and back is clearly visible. For the above query, the client first sends it in an agreed-upon form to all the workers.
 Notice how `AVG` gets separated into `COUNT` and `SUM`.
 
 ```json
