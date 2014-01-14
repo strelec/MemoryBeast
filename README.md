@@ -1,14 +1,17 @@
 MemoryBeast
 ===========
 
-Amazingly fast in-memory distributed (map-reduce) SQL-like data storage. It consists of multiple server instances, written in C++ for speed and memory efficency and one Ruby instance connecting them all together, distributing tasks.
+MemoryBeast enables you to explore your big JSON and XML documents with SQL statements. It is really fast, but moreover, it can utilize all the cores of your processor. What is more, it can scale to multiple computers / servers.
 
-In terms of classic map-reduce paradigm, you could say the clusters are map and ruby frontend is the reduce. The ruby frontend is also in charge of dispatching the data to all the instances.
+It is very easy to use and written in C++ for speed and memory efficiency.
+
+Try it out! We currently have stable 1.0 version.
+
 
 Limitations
 ---
 
-- Inability to join multiple JSON files together. You can have multiple tables (for multiple users / datasets), but you can only select from one at the time.
+- Inability to join multiple JSON files together. You can have multiple tables available at once (for multiple users / datasets), but you can only select from one at the time.
 - Insert only (warehousing). No deletions or updates.
 
 Server
@@ -108,7 +111,7 @@ SQL
 Operations & functions
 ===
 
-Example of a query:
+Example of a more complex query this engine can handle:
 
 ```sql
 SELECT SUM(LENGTH(id)), AVG(load), (3*10-2)^2 AS squared
@@ -178,3 +181,11 @@ It then waits for the response from all of them:
     ]
 }
 ```
+
+To Do
+===
+
+- [ ] Use `terminal-table` gem to display results in tabular fashion (instead of what is seen above).
+- [ ] Make it simpler to use => Auto-deploy the workers in the background.
+- [ ] Allow querying nested arrays.
+- [ ] XML support planned using SAX parser (to be able to store arbitrarily big files).
