@@ -58,7 +58,7 @@ void runServer(int port) {
 			for(auto &it: db.tables)
 				ret[it.first] = it.second.size;
 
-		} else if (act == "cleanup") {
+		} else if (act == "finalize") {
 			string table = root["table"].asString();
 			db.tables[table].cleanup();
 			ret["ok"] = true;

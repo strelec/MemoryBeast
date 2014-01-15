@@ -1,5 +1,4 @@
 struct AST {
-
 	enum Op {
 		VAL,
 		GET,
@@ -114,7 +113,7 @@ struct AST {
 				return first;
 			case 3: // count
 				Val r(INT);
-				r.vInt = (first.type == NIL) ? 0 : 1;
+				r.vInt = (first.type == NIL);
 				return r;
 		}
 

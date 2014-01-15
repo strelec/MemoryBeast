@@ -26,8 +26,8 @@ struct Database {
 		u32 i = 0;
 		string line;
 		while(getline(f, line)) {
+			i++;
 			processLine(line, t);
-			if (!(++i % 10000)) cout << i << endl;
 		}
 
 		f.close();
