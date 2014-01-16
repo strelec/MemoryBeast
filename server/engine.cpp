@@ -45,8 +45,8 @@ void runServer(int port) {
 			ret["count"] = db.load(root["data"], table);
 
 		} else if (act == "select") {
-			if (root["table"].type() == Json::stringValue) {
-				string table = root["table"].asString();
+			if (root["from"].type() == Json::stringValue) {
+				string table = root["from"].asString();
 				ret["result"] = db.tables[table].select(root);
 			} else {
 				Table temp;

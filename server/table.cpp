@@ -25,7 +25,7 @@ struct Table {
 		bool agg = false;
 
 		vector<AST> what;
-		for(auto &it: q["what"]) {
+		for(auto &it: q["select"]) {
 			what.push_back( AST(it, columns) );
 			if (what.back().isAgg())
 				agg = true;

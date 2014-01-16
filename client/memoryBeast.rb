@@ -94,8 +94,8 @@ class MemoryBeast
 		# EXECUTE
 
 		params = {
-			table: params[:from],
-			what: what,
+			from: params[:from],
+			select: what,
 			where: if params.has_key? :where
 				Expression.new(params[:where]).to_a
 			else true; end,
