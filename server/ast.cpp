@@ -113,7 +113,7 @@ struct AST {
 				return first;
 			case 3: // count
 				Val r(INT);
-				r.vInt = (first.type == NIL);
+				r.vInt = (first.type != NIL);
 				return r;
 		}
 
