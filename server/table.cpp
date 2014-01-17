@@ -1,27 +1,17 @@
-struct Table {
-	map<path, Column> columns;
-	map<string, u32> *index = nullptr;
-
-	typedef map<vector<Val>, vector<vector<Val>>> rs;
-
-	// current path stack
-	path cur;
-	u32 size = 0;
-
-	Table() {
-		index = new map<string, u32>;
+	Table::Table() {
+		index = new map<Val, u32>;
 	}
 
-	~Table() {
+	Table::~Table() {
 		unindex();
 	}
 
-	void unindex() {
+	void Table::unindex() {
 		delete index;
 		index = nullptr;
 	}
 
-	Json::Value select(Json::Value q) {
+	Json::Value Table::select(Json::Value q) {
 		bool agg = false;
 
 		vector<AST> what;
@@ -60,13 +50,13 @@ struct Table {
 		return ret;
 	}
 
-	u32 insert(Json::Value root) {
+	u32 Table::insert(Json::Value root) {
 		u32 temp = doInsert(root);
 		size++;
 		return temp;
 	}
 
-	void cleanup() {
+	void Table::cleanup() {
 		unindex();
 		for(auto &c: columns) {
 			c.second.lookup.unpopulate();
@@ -76,7 +66,7 @@ struct Table {
 		}
 	}
 
-	void report() {
+	void Table::report() {
 		for(auto &c: columns) {
 			cout << endl << "COLUMN " << dispPath(c.first) << endl;
 			c.second.report();
@@ -85,9 +75,7 @@ struct Table {
 		}
 	}
 
-private:
-
-	u32 doInsert(Json::Value& root) {
+	u32 Table::doInsert(Json::Value& root) {
 		assert(root.isObject());
 
 		u32 id = 0;
@@ -100,7 +88,7 @@ private:
 
 			switch((*it).type()) {
 				case Json::objectValue:
-					doInsert(*it);
+						doInsert(*it);
 				break;
 				case Json::arrayValue: {
 					Column &c = columns[cur];
@@ -122,7 +110,7 @@ private:
 		return id;
 	}
 
-	rs selectNormal(vector<AST> &what, AST &where, vector<AST> &group, i32 skip, u32 limit) {
+	Table::rs Table::selectNormal(vector<AST> &what, AST &where, vector<AST> &group, i32 skip, u32 limit) {
 		rs res;
 		vector<Val> key;
 		vector<Val> vals;
@@ -148,7 +136,7 @@ private:
 		return res;
 	}
 
-	rs selectAggregate(vector<AST> &what, AST &where, vector<AST> &group, i32 skip, u32 limit) {
+	Table::rs Table::selectAggregate(vector<AST> &what, AST &where, vector<AST> &group, i32 skip, u32 limit) {
 		rs res;
 		vector<Val> key;
 		vector<Val> vals;
@@ -184,10 +172,9 @@ private:
 		return res;
 	}
 
-	Json::Value convert(vector<Val> vec) {
+	Json::Value Table::convert(vector<Val> vec) {
 		Json::Value v = Json::arrayValue;
 		for(auto &el: vec)
 			v.append( el.json() );
 		return v;
 	}
-};

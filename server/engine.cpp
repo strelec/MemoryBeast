@@ -19,6 +19,8 @@ using namespace std;
 #include "intColumn.cpp"
 #include "lookup.cpp"
 
+#include "table.h"
+
 #include "column.cpp"
 #include "ast.cpp"
 #include "table.cpp"
@@ -45,7 +47,7 @@ void runServer(int port) {
 			ret["count"] = db.load(root["data"], table);
 
 		} else if (act == "select") {
-			if (root["from"].type() == Json::stringValue) {
+			if (root["from"].isString()) {
 				string table = root["from"].asString();
 				ret["result"] = db.tables[table].select(root);
 			} else {
