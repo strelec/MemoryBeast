@@ -52,6 +52,7 @@ string dispPath(path p) {
 	string s;
 	for(string &px: p)
 		s += px + ".";
-	s.pop_back();
+	if (!p.empty())
+		s.pop_back();
 	return s;
 }
