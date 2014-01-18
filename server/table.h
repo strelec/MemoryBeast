@@ -20,12 +20,14 @@ struct Table {
 	Json::Value select(Json::Value q);
 	u32 insert(Json::Value root);
 
+	vector<Column*> findColumn(path p);
+
 	void cleanup();
 	void report();
 
 private:
 
-	u32 doInsert(Json::Value& root);
+	void doInsert(Json::Value& root);
 
 	rs selectNormal(vector<AST> &what, AST &where, vector<AST> &group, i32 skip, u32 limit);
 

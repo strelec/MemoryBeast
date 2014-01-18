@@ -1,13 +1,18 @@
 struct AST {
 	enum Op {
 		VAL,
+
 		GET,
+		FORN,
+		MFORN,
+
 		CALL,
 		AGG
 	} op;
 
 	Val val;
 	Column* get;
+	vector<Column*> forn;
 
 	int func;
 	vector<AST> params;
@@ -20,7 +25,7 @@ struct AST {
 	};
 	const vector<string> aggs = {"min", "max", "sum", "count"};
 
-	AST(Json::Value& expr, map<path, Column>& columns) {
+	AST(Json::Value& expr, Table *t) {
 		op = VAL;
 		val = Val();
 
@@ -32,15 +37,21 @@ struct AST {
 					for(u32 i=1; i<expr.size(); ++i)
 						p.push_back( expr[i].asString() );
 
-					if (columns.end() != columns.find(p)) {
+					forn = t->findColumn(p);
+					if (forn.size() == 1) {
 						op = GET;
-						get = &columns[p];
+						get = forn.front();
+					} else if (forn.size() != 0) {
+						op = FORN;
+						for(auto &c: forn)
+							if(c->type == Type::MFORN)
+								op = MFORN;
 					}
 				} else {
 					if (!determineFunc(call))
 						cerr << "Invalid function / operator " << call << "." << endl;
 					for(u32 i=1; i<expr.size(); ++i)
-						params.push_back(AST(expr[i], columns));
+						params.push_back(AST(expr[i], t));
 				}
 			} break;
 			case Json::objectValue:
@@ -51,73 +62,85 @@ struct AST {
 	}
 
 	Val eval(u32 row) {
-		if (op == VAL)
-			return val;
+		switch(op) {
+			case VAL:
+				return val;
 
-		if (op == GET)
-			return (*get)[row];
-
-		Val first = params[0].eval(row);
-
-		if (op == CALL) switch(func) {
-			case 0: case 1: // ==
-				return toVal( first == params[1].eval(row) );
-			break; case 2: // !=
-				return toVal( first != params[1].eval(row) );
-
-			break; case 3: // +
-				if (params.size() >= 2)
-					first += params[1].eval(row);
-			break; case 4: // -
-				if (params.size() >= 2)
-					first += params[1].eval(row);
-				if (params.size() >= 1)
-					first.inv();
-			break; case 5: // *
-				first *= params[1].eval(row);
-			break; case 6: // /
-				first /= params[1].eval(row);
-			break; case 7: // ^
-				first ^= params[1].eval(row);
-
-			break; case 8: // or
-				return toVal( first.truey() || params[1].eval(row).truey() );
-			break; case 9: // and
-				return toVal( first.truey() && params[1].eval(row).truey() );
-			break; case 10: // not
-				return toVal( !first.truey() );
-
-			break; case 11: { // length
-				if (first.type != STR)
+			case GET:
+				return (*get)[row];
+			case FORN:
+				if (!forn.front())
 					return Val();
-				Val r(INT);
-				r.vInt = first.vStr->size();
-				return r;
-			} break; case 12: { //position
-				if (first.type != STR)
-					return Val();
-				Val needle = params[1].eval(row);
-				if (needle.type != STR)
-					return Val();
+				for(u8 i=forn.size()-1; i>0; i--)
+					row = (*forn[i])[row].vForn;
+				return (*forn.front())[row];
+			case MFORN:
+				// TODO: NOT IMPLEMENTED
+				return Val();
 
-				Val r(INT);
-				u32 pos = first.vStr->find( *needle.vStr );
-				r.vInt = (pos == string::npos) ? 0 : pos+1;
-				return r;
+			case CALL: {
+				Val first = params[0].eval(row);
+				switch(func) {
+					case 0: case 1: // ==
+						return toVal( first == params[1].eval(row) );
+					break; case 2: // !=
+						return toVal( first != params[1].eval(row) );
+
+					break; case 3: // +
+						if (params.size() >= 2)
+							first += params[1].eval(row);
+					break; case 4: // -
+						if (params.size() >= 2)
+							first += params[1].eval(row);
+						if (params.size() >= 1)
+							first.inv();
+					break; case 5: // *
+						first *= params[1].eval(row);
+					break; case 6: // /
+						first /= params[1].eval(row);
+					break; case 7: // ^
+						first ^= params[1].eval(row);
+
+					break; case 8: // or
+						return toVal( first.truey() || params[1].eval(row).truey() );
+					break; case 9: // and
+						return toVal( first.truey() && params[1].eval(row).truey() );
+					break; case 10: // not
+						return toVal( !first.truey() );
+
+					break; case 11: { // length
+						if (first.type != STR)
+							return Val();
+						Val r(INT);
+						r.vInt = first.vStr->size();
+						return r;
+					} break; case 12: { //position
+						if (first.type != STR)
+							return Val();
+						Val needle = params[1].eval(row);
+						if (needle.type != STR)
+							return Val();
+
+						Val r(INT);
+						u32 pos = first.vStr->find( *needle.vStr );
+						r.vInt = (pos == string::npos) ? 0 : pos+1;
+						return r;
+					}
+				}
 			}
+			case AGG:
+				Val first = params[0].eval(row);
+				switch(func) {
+					case 0: case 1: case 2:
+						// min & max & sum
+						return first;
+					case 3: // count
+						Val r(INT);
+						r.vInt = (first.type != NIL);
+						return r;
+				}
 		}
-
-		if (op == AGG) switch(func) {
-			case 0: case 1: case 2:
-				// min & max & sum
-				return first;
-			case 3: // count
-				Val r(INT);
-				r.vInt = (first.type != NIL);
-				return r;
-		}
-
-		return first;
+		return Val();
 	}
 
 	void aggregate(Val &prev, u32 row) {

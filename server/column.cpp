@@ -1,7 +1,5 @@
 #include "val.cpp"
 
-struct Table;
-
 struct Column {
 	Type type = NIL;
 	vector<bool> isNil;
@@ -44,7 +42,7 @@ struct Column {
 					vInt.push(v.vInt);
 				break; case FORN:
 					vForn.expand(size);
-					vForn.push(v.vInt);
+					vForn.push(v.vForn);
 				break; case MFORN:
 					if (v.vTbl->size()) {
 						vTblStarts.expand(size+1);

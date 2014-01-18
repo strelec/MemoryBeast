@@ -16,16 +16,16 @@
 
 		vector<AST> what;
 		for(auto &it: q["select"]) {
-			what.push_back( AST(it, columns) );
+			what.push_back( AST(it, this) );
 			if (what.back().isAgg())
 				agg = true;
 		}
 
-		AST where(q["where"], columns);
+		AST where(q["where"], this);
 
 		vector<AST> group;
 		for(auto &it: q["group"])
-			group.push_back( AST(it, columns) );
+			group.push_back( AST(it, this) );
 
 		i32 skip = q["offset"].asUInt();
 		u32 limit = q["limit"].asUInt();
@@ -51,9 +51,47 @@
 	}
 
 	u32 Table::insert(Json::Value root) {
-		u32 temp = doInsert(root);
-		size++;
-		return temp;
+		assert(root.isObject());
+
+		// auto normalisation feature
+		if (index && root.isMember("id")) {
+			auto pos = index->find(Val(root["id"]));
+			if (pos == index->end()) {
+				(*index)[Val(root["id"])] = size;
+			} else {
+				return pos->second;
+			}
+		}
+
+		doInsert(root);
+		return size++;
+	}
+
+	vector<Column*> Table::findColumn(path p) {
+		auto pos = columns.find(p);
+		if (pos != columns.end())
+			return {&pos->second};
+
+		u8 maxMatch = 0;
+		Column *current = nullptr;
+		for(auto &it: columns) {
+			u8 match = 0;
+			while(it.first[match] == p[match])
+				match++;
+			if (match > maxMatch) {
+				maxMatch = match;
+				current = &it.second;
+			}
+		}
+		if (!current)
+			return {nullptr};
+
+		assert(p.size() != maxMatch);
+
+		path subpath = path(p.begin()+maxMatch, p.end());
+		auto ret = current->table->findColumn(subpath);
+		ret.push_back(current);
+		return ret;
 	}
 
 	void Table::cleanup() {
@@ -75,20 +113,23 @@
 		}
 	}
 
-	u32 Table::doInsert(Json::Value& root) {
-		assert(root.isObject());
-
-		u32 id = 0;
-		if (false && index && root.isMember("id")) {
-			cout << root["id"].toStyledString() << endl;
-		}
-
+	void Table::doInsert(Json::Value& root) {
 		for(auto it = root.begin(); it != root.end(); ++it) {
 			cur.push_back( it.key().asString() );
 
 			switch((*it).type()) {
 				case Json::objectValue:
+					// auto normalisation
+					if ((*it).isMember("id")) {
+						Column &c = columns[cur];
+						if (!c.table)
+							c.table = new Table();
+
+						u32 id = c.table->insert(*it);
+						c.push( Val(id), size );
+					} else {
 						doInsert(*it);
+					}
 				break;
 				case Json::arrayValue: {
 					Column &c = columns[cur];
@@ -106,8 +147,6 @@
 			}
 			cur.pop_back();
 		}
-
-		return id;
 	}
 
 	Table::rs Table::selectNormal(vector<AST> &what, AST &where, vector<AST> &group, i32 skip, u32 limit) {
