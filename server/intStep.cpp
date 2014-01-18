@@ -86,11 +86,8 @@ constexpr i64 EcoIntStep<T>::spare;
 
 template<class T>
 struct IntStep : public BaseIntStep<T> {
-	constexpr static int bits = sizeof(T)*8;
-	constexpr static i64 maxValue = (1LL << bits) - 1;
-
 	bool push(i64 n) {
-		if (n > maxValue)
+		if (n > BaseIntStep<T>::maxValue)
 			return false;
 		this->v.push_back(n);
 		return true;
