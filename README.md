@@ -52,7 +52,17 @@ This storage engine is very memory efficient, using only about 10% memory compar
 - **Range-based integer values:** In case of timestamps, they are usually big numbers, but their range is small, it usually spans just a few days or maybe months. This allows us to save the base and report the number relative to it, using smaller integer to save it.
 - **Three-byte integers:** The engine supports three byte integers, saving one byte per record in columns that range in value form 2¹⁶ to the 2²⁴.
 - **Packing boolean values:** `True` and `False` only consume one bit as we pack eight of these into one byte. This is actually the default behaviour of the C++ `vector<bool>` data structure.
-- **Auto normalisation (planned for 1.1):** When you insert the json, you typically have to denormalise 1:n and n:n relations by storing the same data multiple times. If you supply the `id` field with the subobject, it is stored only once per unique id.
+- **Auto normalisation:** When you insert the json, you typically have to denormalise 1:n and n:n relations by storing the same data multiple times. If you supply the `id` field with the subobject, it is stored only once per unique id. In the example below, the `toy soldier` with `id = 1` is stored only once.
+
+```json
+{"child": "John", "toys": [
+	{"id":1, "name":"toy soldier"},
+	{"id":2, "name":"deck of cards"}
+] }
+{"child": "Jack", "toys": [
+	{"id":1, "name":"toy soldier"},
+	{"id":3, "name":"sudoku puzzles"}
+] }
 
 Notes
 ---
