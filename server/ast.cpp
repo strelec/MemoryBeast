@@ -127,8 +127,9 @@ struct AST {
 						return r;
 					}
 				}
+				return first;
 			}
-			case AGG:
+			case AGG: {
 				Val first = params[0].eval(row);
 				switch(func) {
 					case 0: case 1: case 2:
@@ -139,8 +140,10 @@ struct AST {
 						r.vInt = (first.type != NIL);
 						return r;
 				}
+				return first;
+			} default:
+				return Val();
 		}
-		return Val();
 	}
 
 	void aggregate(Val &prev, u32 row) {
