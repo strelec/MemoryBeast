@@ -1,8 +1,10 @@
 struct Lookup {
 	// how big table has to get to start the checks
 	constexpr static u32 treshold = 10000;
-	// column recordsueness percent to stop
+	// uniqueness percent to automatically stop
 	constexpr static int percent = 30;
+	// uniqueness percent to keep at all times
+	constexpr static int threshold = 2;
 
 	map<string, u32>* lookup;
 	u32 records = 0;
@@ -16,7 +18,7 @@ struct Lookup {
 	}
 
 	~Lookup() {
-		unpopulate();
+		delete lookup;
 	}
 
 	u32 add(string s) {
@@ -51,8 +53,14 @@ struct Lookup {
 	}
 
 	void unpopulate() {
-		delete lookup;
-		lookup = nullptr;
+		if (usage() < threshold) {
+			delete lookup;
+			lookup = nullptr;
+		}
+	}
+
+	double usage() {
+		return 100.0*table.size()/records;
 	}
 
 private:
@@ -69,10 +77,11 @@ private:
 	}
 
 	void maintain() {
-		if (lookup)
-			info("Lookup check: " + to_string(100.0*table.size()/records) + "%");
+		if (!lookup)
+			return;
 
-		if (lookup and table.size() >= records*percent/100) {
+		info("Lookup check: " + to_string(usage()) + "%");
+		if (usage() > percent) {
 			info("Disabling lookup");
 			unpopulate();
 		}
