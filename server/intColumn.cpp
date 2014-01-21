@@ -26,8 +26,9 @@ struct BaseIntVector {
 		if (cur == 5)
 			if (!n48.push(n)) cur++;
 		if (cur == 6) {
+			info("IntColumn overflow: " + to_string(n));
 			overflows++;
-			cerr << "ERROR: IntColumn overflow (" << n << ")" << endl;
+			push( size() ? (*this)[0] : 0 );
 			return false;
 		}
 		// DEVELOPMENT:
@@ -41,9 +42,9 @@ struct BaseIntVector {
 
 	void expand(u32 n) {
 		u32 siz = size();
-		if (n < siz) {
-			cerr << "ERROR: Column can only be expanded." << endl;
-		} else if (n != siz) {
+		assert(n >= siz); // Column can only be expanded.
+
+		if (n != siz) {
 			switch(current()) {
 					   case 0:
 					n8.resize(n /* - siz + n8.size() */);
@@ -129,7 +130,8 @@ private:
 		pos -= n40.size();
 		if (pos < n48.size())
 			return n48[pos];
-		cerr << "ERROR: IntColumn index out of bounds" << endl;
+
+		assert(pos >= size()); // Row number out of bounds
 		return -1;
 	}
 };

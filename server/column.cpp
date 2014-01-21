@@ -33,10 +33,10 @@ struct Column {
 			if (type == NIL)
 				type = v.type;
 
-			if (type != v.type) {
-				cerr << "Type mismatch: " << type << " " << v.type << endl;
-				cout << v.json().toStyledString() << endl;
-			} else switch(v.type) {
+			if (type != v.type)
+				throw DatatypeMismatchE(type, v.type);
+
+			switch(v.type) {
 				case INT:
 					vInt.expand(size);
 					vInt.push(v.vInt);

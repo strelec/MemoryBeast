@@ -70,10 +70,11 @@ private:
 
 	void maintain() {
 		if (lookup)
-			cerr << "INFO: Lookup check: " << table.size() << " / " << records << " (" << 100.0*table.size()/records << " %)" << endl;
+			info("Lookup check: " + to_string(100.0*table.size()/records) + "%");
+
 		if (lookup and table.size() >= records*percent/100) {
+			info("Disabling lookup");
 			unpopulate();
-			cerr << "INFO: Disabling lookup." << endl;
 		}
 	}
 };

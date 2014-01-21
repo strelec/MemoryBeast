@@ -52,7 +52,7 @@ struct EcoIntStep : public BaseIntStep<T> {
 					return false;
 
 				i64 dec = base-n + min(diff, spare);
-				cerr << "INFO: Moving array by " << dec << endl;
+				info("Moving array by " + to_string(dec));
 
 				base -= dec;
 				max += dec;

@@ -49,13 +49,13 @@ struct AST {
 					}
 				} else {
 					if (!determineFunc(call))
-						cerr << "Invalid function / operator " << call << "." << endl;
+						throw UnknownOperationE(call);
 					for(u32 i=1; i<expr.size(); ++i)
 						params.push_back(AST(expr[i], t));
 				}
 			} break;
 			case Json::objectValue:
-				cerr << "Invalid expression with Hash." << endl;
+				throw HashExpressionE();
 			break; default:
 				val = Val(expr);
 		}
@@ -109,12 +109,18 @@ struct AST {
 						return toVal( !first.truey() );
 
 					break; case 11: { // length
+						if (params.size() != 1)
+							throw ParameterMisnumberE("length", {1}, params.size());
+
 						if (first.type != STR)
 							return Val();
 						Val r(INT);
 						r.vInt = first.vStr->size();
 						return r;
 					} break; case 12: { //position
+						if (params.size() != 2)
+							throw ParameterMisnumberE("position", {2}, params.size());
+
 						if (first.type != STR)
 							return Val();
 						Val needle = params[1].eval(row);

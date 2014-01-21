@@ -15,7 +15,13 @@
 #include <jsoncpp/json/writer.h>
 using namespace std;
 
+void info(string s) {
+	cerr << "INFO: " << s << endl;
+}
+
 #include "typedef.cpp"
+#include "exceptions.cpp"
+
 #include "intColumn.cpp"
 #include "lookup.cpp"
 
@@ -40,33 +46,37 @@ void runServer(int port) {
 		reader.parse(query, root);
 
 		Json::Value ret = Json::objectValue;
+		try {
+			string act = root["act"].asString();
+			if (act == "insert") {
+				string table = root["table"].asString();
+				ret["count"] = db.load(root["data"], table);
 
-		string act = root["act"].asString();
-		if (act == "insert") {
-			string table = root["table"].asString();
-			ret["count"] = db.load(root["data"], table);
+			} else if (act == "select") {
+				if (root["from"].isString()) {
+					string table = root["from"].asString();
+					ret["result"] = db.tables[table].select(root);
+				} else {
+					Table temp;
+					temp.size = 1;
+					ret["result"] = temp.select(root);
+				}
 
-		} else if (act == "select") {
-			if (root["from"].isString()) {
-				string table = root["from"].asString();
-				ret["result"] = db.tables[table].select(root);
+			} else if (act == "tables") {
+				for(auto &it: db.tables)
+					ret[it.first] = it.second.size;
+
+			} else if (act == "finalize") {
+				string table = root["table"].asString();
+				db.tables[table].cleanup();
+				ret["ok"] = true;
+
 			} else {
-				Table temp;
-				temp.size = 1;
-				ret["result"] = temp.select(root);
+				throw InvalidCommandE(act);
 			}
-
-		} else if (act == "tables") {
-			for(auto &it: db.tables)
-				ret[it.first] = it.second.size;
-
-		} else if (act == "finalize") {
-			string table = root["table"].asString();
-			db.tables[table].cleanup();
-			ret["ok"] = true;
-
-		} else {
-			ret["error"] = "Invalid command.";
+		} catch(exception& e) {
+			ret = Json::objectValue;
+			ret["error"] = e.what();
 		}
 
 		Json::FastWriter writer;
