@@ -23,7 +23,7 @@ struct Table {
 	vector<Column*> findColumn(path p);
 
 	void cleanup();
-	void report();
+	Json::Value report();
 
 private:
 

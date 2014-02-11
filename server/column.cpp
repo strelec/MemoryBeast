@@ -71,7 +71,7 @@ struct Column {
 		Val v;
 		v.type = type;
 		switch(type) {
-			break; case INT:
+			case INT:
 				v.vInt = vInt[pos];
 			break; case FORN:
 				v.vInt = vForn[pos];
@@ -110,28 +110,48 @@ struct Column {
 		vTblStarts.shrink_to_fit();
 	}
 
-	void report() {
-		int nulls = count(isNil.begin(), isNil.end(), true);
-		if (nulls)
-			cout << "Null: " << nulls << " / " << isNil.size() << endl;
+	Json::Value report(u32 size) {
+		Json::Value ret = Json::objectValue;
 
-		if (vInt.size() != 0) {
-			cout << "Int: " << endl;
-			vInt.report();
+		u64 bytes = isNil.size()/8;
+		u64 total = isNil.capacity()/8;
+		u32 records = 0;
+		ret["type"] = Type2string[type];
+
+		switch(type) {
+			case INT: {
+				u32 i = 1;
+				for(auto &el: vInt.sizes()) {
+					ret["sizes"].append(el);
+					bytes += el*i++;
+				}
+
+				ret["overflows"] = vInt.overflows;
+				records = vInt.size();
+			} break; case FORN:
+				ret["table"] = table->report();
+			break; case MFORN: {
+				ret["table"] = table->report();
+			} break; case STR:
+				records = vStr.size();
+				ret["unique"] = lookup.usage();
+				bytes += lookup.length();
+			break; case REAL:
+				records = vReal.size();
+				bytes += records*sizeof(real);
+				total += vReal.capacity()*sizeof(real);
+			break; case BOOL:
+				records = vBool.size();
+				bytes += records/8;
+				total += vBool.capacity()/8;
+			break; default:
+				;
 		}
-		if (vForn.size() != 0) {
-			cout << "Foreign key: " << endl;
-			vForn.report();
-		}
-		if (vStr.size() != 0) {
-			cout << "String: " << lookup.size() << " / " << lookup.length() << endl;
-			vStr.report();
-		}
-		if (!vReal.empty())
-			cout << "Real: " << vReal.size() << endl;
-		if (!vBool.empty())
-			cout << "Bool: " << vBool.size() << endl;
-		if (vTblStarts.size() > 1)
-			cout << "Table: " << vTblStarts.size()-1 << " / " << vTbl.size() << endl;
+		u64 nulls = count(isNil.begin(), isNil.end(), true) + (size-records);
+		ret["nulls"] = (Json::Value::UInt64)nulls;
+		ret["bytes"] = (Json::Value::UInt64)bytes;
+		ret["overhead"] = (Json::Value::UInt64)(total - bytes);
+
+		return ret;
 	}
 };

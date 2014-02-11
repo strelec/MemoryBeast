@@ -129,7 +129,7 @@ class MemoryBeast
 		select q
 	end
 
-	def cleanup(table='data')
+	def cleanup(table)
 		clients.each { |c|
 			c.run :cleanup, table
 		}
@@ -146,6 +146,15 @@ class MemoryBeast
 			res.merge(c.result) { |key, a, b|
 				a+b
 			}
+		}
+	end
+
+	def describe(table)
+		clients.each { |c|
+			c.run :describe, table
+		}
+		clients.reduce([]) { |res, c|
+			res << c.result
 		}
 	end
 

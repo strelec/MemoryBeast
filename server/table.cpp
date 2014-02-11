@@ -104,13 +104,13 @@
 		}
 	}
 
-	void Table::report() {
-		for(auto &c: columns) {
-			cout << endl << "COLUMN " << dispPath(c.first) << endl;
-			c.second.report();
-			if (c.second.table)
-				c.second.table->report();
-		}
+	Json::Value Table::report() {
+		Json::Value ret;
+		ret["type"] = "table";
+		ret["rows"] = size;
+		for(auto &c: columns)
+			ret["columns"][dispPath(c.first)] = c.second.report(size);
+		return ret;
 	}
 
 	void Table::doInsert(Json::Value& root) {

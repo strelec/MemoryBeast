@@ -69,11 +69,8 @@ struct BaseIntVector {
 		return sum;
 	}
 
-	void report() {
-		int i = 0;
-		for(auto sz: sizes())
-			cout << ++i*8 << ": " << sz << ", ";
-		cout << "++: " << overflows << endl;
+	inline array<u32, 6> sizes() {
+		return {n8.size(), n16.size(), n24.size(), n32.size(), n40.size(), n48.size()};
 	}
 
 	void shrink_to_fit() {
@@ -93,10 +90,6 @@ struct BaseIntVector {
 	}
 
 private:
-
-	inline array<u32, 6> sizes() {
-		return {n8.size(), n16.size(), n24.size(), n32.size(), n40.size(), n48.size()};
-	}
 
 	inline int current() {
 		if (!n48.empty())

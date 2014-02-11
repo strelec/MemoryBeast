@@ -10,6 +10,17 @@ enum Type {
 	MFORN
 };
 
+map<Type, string> Type2string = {
+	{NIL, "unknown"},
+	{BOOL, "boolean"},
+	{INT, "integer"},
+	{REAL, "real"},
+	{STR, "string"},
+
+	{FORN, "link"},
+	{MFORN, "table"}
+};
+
 struct Val {
 	Type type = NIL;
 

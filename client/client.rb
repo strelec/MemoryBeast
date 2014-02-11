@@ -79,16 +79,6 @@ private
 		recv
 	end
 
-	def evaluate(expr)
-		e = Expression.new expr
-		query = {
-			act: 'eval',
-			expr: e.to_a
-		}
-		out query
-		recv
-	end
-
 	def cleanup(table)
 		query = {act: 'cleanup', table: table}
 		out query
@@ -97,6 +87,12 @@ private
 
 	def tables
 		query = {act: 'tables'}
+		out query
+		recv
+	end
+
+	def describe(table)
+		query = {act: 'describe', table: table}
 		out query
 		recv
 	end

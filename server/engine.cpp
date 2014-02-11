@@ -1,5 +1,3 @@
-#include <cstdlib>
-
 #include <vector>
 #include <stack>
 #include <map>
@@ -66,10 +64,14 @@ void runServer(int port) {
 				for(auto &it: db.tables)
 					ret[it.first] = it.second.size;
 
+			} else if (act == "describe") {
+				string table = root["table"].asString();
+				ret["result"] = db.tables[table].report();
+
 			} else if (act == "finalize") {
 				string table = root["table"].asString();
 				db.tables[table].cleanup();
-				ret["ok"] = true;
+				ret["result"] = "ok";
 
 			} else {
 				throw InvalidCommandE(act);
