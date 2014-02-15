@@ -11,6 +11,7 @@ struct BaseIntVector {
 
 	u8 cur = 0;
 
+	u32 _size = 0;
 	u32 overflows = 0;
 
 	bool push(i64 n) {
@@ -31,6 +32,7 @@ struct BaseIntVector {
 			push( size() ? (*this)[0] : 0 );
 			return false;
 		}
+		_size++;
 
 		// DEVELOPMENT:
 		// assert(n == (*this)[size()-1]);
@@ -42,32 +44,29 @@ struct BaseIntVector {
 	}
 
 	void expand(u32 n) {
-		u32 siz = size();
-		assert(n >= siz); // Column can only be expanded.
+		assert(n >= size()); // Column can only be expanded.
 
-		if (n != siz) {
+		if (n != size()) {
 			switch(cur) {
 					   case 0:
-					n8.resize(n /* - siz + n8.size() */);
+					n8.resize(n /* - size() + n8.size() */);
 				break; case 1:
-					n16.resize(n - siz + n16.size());
+					n16.resize(n - size() + n16.size());
 				break; case 2:
-					n24.resize(n - siz + n24.size());
+					n24.resize(n - size() + n24.size());
 				break; case 3:
-					n32.resize(n - siz + n32.size());
+					n32.resize(n - size() + n32.size());
 				break; case 4:
-					n40.resize(n - siz + n40.size());
+					n40.resize(n - size() + n40.size());
 				break; case 5:
-					n48.resize(n - siz + n48.size());
+					n48.resize(n - size() + n48.size());
 			}
+			_size = n;
 		}
 	}
 
-	u32 size() {
-		u32 sum = 0;
-		for(auto sz: sizes())
-			sum += sz;
-		return sum;
+	inline u32 size() {
+		return _size;
 	}
 
 	inline array<u32, 6> sizes() {
@@ -84,8 +83,7 @@ struct BaseIntVector {
 	}
 
 	void debug() {
-		u32 siz = size();
-		for(u32 i=0; i<siz; ++i)
+		for(u32 i=0; i<size(); ++i)
 			cout << at(i) << ", ";
 		cout << endl;
 	}
