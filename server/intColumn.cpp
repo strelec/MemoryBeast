@@ -1,7 +1,7 @@
 #include "intStep.cpp"
 
 template<template<class> class T>
-struct BaseIntVector {
+class BaseIntVector {
 	T<u8> n8;
 	T<u16> n16;
 	T<u24> n24;
@@ -12,7 +12,9 @@ struct BaseIntVector {
 	u8 cur = 0;
 
 	u32 _size = 0;
-	u32 overflows = 0;
+	u32 _overflows = 0;
+
+public:
 
 	bool push(i64 n) {
 		if (cur == 0)
@@ -28,7 +30,7 @@ struct BaseIntVector {
 
 		if (cur == 5 && !n48.push(n)) {
 			info("IntColumn overflow: " + to_string(n));
-			overflows++;
+			_overflows++;
 			push( size() ? (*this)[0] : 0 );
 			return false;
 		}
@@ -40,7 +42,26 @@ struct BaseIntVector {
 	}
 
 	i64 operator[](u32 pos) {
-		return at(pos);
+		if (pos < n8.size())
+			return n8[pos];
+		pos -= n8.size();
+		if (pos < n16.size())
+			return n16[pos];
+		pos -= n16.size();
+		if (pos < n24.size())
+			return n24[pos];
+		pos -= n24.size();
+		if (pos < n32.size())
+			return n32[pos];
+		pos -= n32.size();
+		if (pos < n40.size())
+			return n40[pos];
+		pos -= n40.size();
+		if (pos < n48.size())
+			return n48[pos];
+
+		assert(pos >= size()); // Row number out of bounds
+		return -1;
 	}
 
 	void expand(u32 n) {
@@ -65,6 +86,10 @@ struct BaseIntVector {
 		}
 	}
 
+	inline u32 overflows() {
+		return _overflows;
+	}
+
 	inline u32 size() {
 		return _size;
 	}
@@ -84,33 +109,8 @@ struct BaseIntVector {
 
 	void debug() {
 		for(u32 i=0; i<size(); ++i)
-			cout << at(i) << ", ";
+			cout << (*this)[i] << ", ";
 		cout << endl;
-	}
-
-private:
-
-	i64 at(u32 pos) {
-		if (pos < n8.size())
-			return n8[pos];
-		pos -= n8.size();
-		if (pos < n16.size())
-			return n16[pos];
-		pos -= n16.size();
-		if (pos < n24.size())
-			return n24[pos];
-		pos -= n24.size();
-		if (pos < n32.size())
-			return n32[pos];
-		pos -= n32.size();
-		if (pos < n40.size())
-			return n40[pos];
-		pos -= n40.size();
-		if (pos < n48.size())
-			return n48[pos];
-
-		assert(pos >= size()); // Row number out of bounds
-		return -1;
 	}
 };
 

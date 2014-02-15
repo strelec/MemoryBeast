@@ -126,7 +126,7 @@ struct Column {
 					bytes += el*i++;
 				}
 
-				ret["overflows"] = vInt.overflows;
+				ret["overflows"] = vInt.overflows();
 				records = vInt.size();
 			} break; case FORN:
 				ret["table"] = table->report();
