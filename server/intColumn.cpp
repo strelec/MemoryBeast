@@ -9,10 +9,11 @@ struct BaseIntVector {
 	T<u40> n40;
 	T<u48> n48;
 
-	int overflows = 0;
+	u8 cur = 0;
+
+	u32 overflows = 0;
 
 	bool push(i64 n) {
-		int cur = current();
 		if (cur == 0)
 			if (!n8.push(n)) cur++;
 		if (cur == 1)
@@ -23,14 +24,14 @@ struct BaseIntVector {
 			if (!n32.push(n)) cur++;
 		if (cur == 4)
 			if (!n40.push(n)) cur++;
-		if (cur == 5)
-			if (!n48.push(n)) cur++;
-		if (cur == 6) {
+
+		if (cur == 5 && !n48.push(n)) {
 			info("IntColumn overflow: " + to_string(n));
 			overflows++;
 			push( size() ? (*this)[0] : 0 );
 			return false;
 		}
+
 		// DEVELOPMENT:
 		// assert(n == (*this)[size()-1]);
 		return true;
@@ -45,7 +46,7 @@ struct BaseIntVector {
 		assert(n >= siz); // Column can only be expanded.
 
 		if (n != siz) {
-			switch(current()) {
+			switch(cur) {
 					   case 0:
 					n8.resize(n /* - siz + n8.size() */);
 				break; case 1:
@@ -90,20 +91,6 @@ struct BaseIntVector {
 	}
 
 private:
-
-	inline int current() {
-		if (!n48.empty())
-			return 5;
-		if (!n40.empty())
-			return 4;
-		if (!n32.empty())
-			return 3;
-		if (!n24.empty())
-			return 2;
-		if (!n16.empty())
-			return 1;
-		return 0;
-	}
 
 	i64 at(u32 pos) {
 		if (pos < n8.size())
