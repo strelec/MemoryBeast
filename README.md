@@ -17,7 +17,13 @@ Limitations
 Worker
 ===
 
-To run a worker, you have to compile `engine.cpp` first. After that is done, execute:
+To run a worker, you have to compile `engine.cpp` first.
+
+```
+g++ -O3 -march=native -ljsoncpp -std=c++11 engine.cpp -o engine
+```
+
+After that is done, execute:
 
 ```
 ./engine 5001
