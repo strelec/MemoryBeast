@@ -9,8 +9,8 @@
 #include <cassert>
 #include <algorithm>
 
-#include <jsoncpp/json/json.h>
-#include <jsoncpp/json/writer.h>
+#include <json/json.h>
+#include <json/writer.h>
 using namespace std;
 
 void info(string s) {

@@ -1,6 +1,8 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
+#include <functional>
+
 struct Socket {
 
 	int socket_desc, client_sock;
